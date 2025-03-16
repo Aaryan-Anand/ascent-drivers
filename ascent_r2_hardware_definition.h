@@ -2,11 +2,13 @@
 #define ASCENT_R2_PINS_H
 
 #include "driver/gpio.h"
+#include "driver/i2c.h"
 
 /* I2C Bus Configuration */
 #define I2C_MASTER_SCL_IO           GPIO_NUM_6      // I2C Clock pin
 #define I2C_MASTER_SDA_IO           GPIO_NUM_5      // I2C Data pin
 #define I2C_MASTER_FREQ_HZ          400000          // I2C master clock frequency
+#define I2C_MASTER_PORT             I2C_NUM_0       // I2C port number (I2C_NUM_0 or I2C_NUM_1)
 
 /* SPI Bus Configuration */
 #define PIN_SPI_SCK                 GPIO_NUM_11     // SPI Clock pin
