@@ -52,12 +52,12 @@ static esp_err_t h3lis331dl_read_reg(uint8_t reg_addr, uint8_t *data, size_t len
 void h3lis331dl_task(void *pvParameters)
 {
     // Initialize H3LIS331DL
-    esp_err_t ret = h3lis331dl_write_reg(CTRL_REG1, 0x37);  // Enable all axes, 50 Hz data rate
+    esp_err_t ret = h3lis331dl_write_reg(H3LIS331DL_CTRL_REG1, 0x37);  // Enable all axes, 50 Hz data rate
     if (ret != ESP_OK) {
          ESP_LOGE(TAG, "Failed to write accelerometer data");
     }
     
-    ret = h3lis331dl_write_reg(CTRL_REG4, 0x00);  // ±100g full scale
+    ret = h3lis331dl_write_reg(H3LIS331DL_CTRL_REG4, 0x00);  // ±100g full scale
     if (ret != ESP_OK) {
          ESP_LOGE(TAG, "Failed to write accelerometer data");
     }
@@ -68,7 +68,7 @@ void h3lis331dl_task(void *pvParameters)
 
     while (1) {
         // Read accelerometer data
-        esp_err_t ret = h3lis331dl_read_reg(OUT_X_L | 0x80, data, 6);  // 0x80 for auto-increment
+        esp_err_t ret = h3lis331dl_read_reg(H3LIS331DL_OUT_X_L | 0x80, data, 6);  // 0x80 for auto-increment
         if (ret == ESP_OK) {
             accel_data[0] = (int16_t)((data[1] << 8) | data[0]);  // X-axis
             accel_data[1] = (int16_t)((data[3] << 8) | data[2]);  // Y-axis
