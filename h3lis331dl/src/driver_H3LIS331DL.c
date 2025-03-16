@@ -3,45 +3,50 @@
 #include "driver/i2c.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-
-#define I2C_MASTER_SCL_IO           6      // SCL pin
-#define I2C_MASTER_SDA_IO           5      // SDA pin
-#define I2C_MASTER_NUM              0       // I2C master port number
-#define I2C_MASTER_FREQ_HZ          400000  // I2C master clock frequency
-#define H3LIS331DL_ADDR             0x18    // I2C address of H3LIS331DL (SA0 pin low)
-
-#define CTRL_REG1                   0x20
-#define CTRL_REG4                   0x23
-#define OUT_X_L                     0x28
+#include "driver_H3LIS331DL.h"
 
 static const char *TAG = "H3LIS331DL";
 
-static esp_err_t i2c_master_init(void)
-{
+// Static variables to store pin configurations
+static int sda_pin;
+static int scl_pin;
+static int i2c_port;
+static uint32_t i2c_freq;
+
+#define H3LIS331DL_I2C_ADDR 0x18    // H3LIS331DL I2C address
+
+esp_err_t h3lis331dl_init(int sda, int scl, int port, uint32_t freq) {
+    // Store pin configurations
+    sda_pin = sda;
+    scl_pin = scl;
+    i2c_port = port;
+    i2c_freq = freq;
+
+    // Initialize I2C
     i2c_config_t conf = {
         .mode = I2C_MODE_MASTER,
-        .sda_io_num = I2C_MASTER_SDA_IO,
-        .scl_io_num = I2C_MASTER_SCL_IO,
+        .sda_io_num = sda_pin,
+        .scl_io_num = scl_pin,
         .sda_pullup_en = GPIO_PULLUP_ENABLE,
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = I2C_MASTER_FREQ_HZ,
+        .master.clk_speed = i2c_freq,
     };
-    esp_err_t err = i2c_param_config(I2C_MASTER_NUM, &conf);
+    esp_err_t err = i2c_param_config(i2c_port, &conf);
     if (err != ESP_OK) {
         return err;
     }
-    return i2c_driver_install(I2C_MASTER_NUM, conf.mode, 0, 0, 0);
+    return i2c_driver_install(i2c_port, conf.mode, 0, 0, 0);
 }
 
 static esp_err_t h3lis331dl_write_reg(uint8_t reg_addr, uint8_t data)
 {
     uint8_t write_buf[2] = {reg_addr, data};
-    return i2c_master_write_to_device(I2C_MASTER_NUM, H3LIS331DL_ADDR, write_buf, sizeof(write_buf), pdMS_TO_TICKS(100));
+    return i2c_master_write_to_device(i2c_port, H3LIS331DL_I2C_ADDR, write_buf, sizeof(write_buf), pdMS_TO_TICKS(100));
 }
 
 static esp_err_t h3lis331dl_read_reg(uint8_t reg_addr, uint8_t *data, size_t len)
 {
-    return i2c_master_write_read_device(I2C_MASTER_NUM, H3LIS331DL_ADDR, &reg_addr, 1, data, len, pdMS_TO_TICKS(100));
+    return i2c_master_write_read_device(i2c_port, H3LIS331DL_I2C_ADDR, &reg_addr, 1, data, len, pdMS_TO_TICKS(100));
 }
 
 void h3lis331dl_task(void *pvParameters)
@@ -80,6 +85,6 @@ void h3lis331dl_task(void *pvParameters)
 
 void app_main(void)
 {
-    ESP_ERROR_CHECK(i2c_master_init());
+    ESP_ERROR_CHECK(h3lis331dl_init(sda_pin, scl_pin, i2c_port, i2c_freq));
     xTaskCreate(h3lis331dl_task, "h3lis331dl_task", 2048, NULL, 5, NULL);
 }

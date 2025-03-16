@@ -51,23 +51,64 @@ extern "C"{
  */
 
 /**
- * @brief     basic example init
- * @param[in] type chip type
- * @param[in] interface chip interface
- * @param[in] dual_quad_spi_enable bool value
- * @return    status code
- *            - 0 success
- *            - 1 init failed
- * @note      none
+ * @brief Initialize the W25QXX flash memory with SPI configuration
+ * 
+ * @param miso GPIO pin number for MISO
+ * @param mosi GPIO pin number for MOSI
+ * @param sclk GPIO pin number for SCLK
+ * @param cs GPIO pin number for CS
+ * @return uint8_t 0 if successful, 1 if failed
  */
-uint8_t w25qxx_basic_init(w25qxx_type_t type, w25qxx_interface_t interface, w25qxx_bool_t dual_quad_spi_enable);
+uint8_t w25qxx_basic_init(int miso, int mosi, int sclk, int cs);
 
 /**
- * @brief  basic example deinit
- * @return status code
- *         - 0 success
- *         - 1 deinit failed
- * @note   none
+ * @brief Read data from the flash memory
+ * 
+ * @param addr Starting address to read from
+ * @param data Buffer to store read data
+ * @param len Number of bytes to read
+ * @return uint8_t 0 if successful, 1 if failed
+ */
+uint8_t w25qxx_basic_read(uint32_t addr, uint8_t *data, uint32_t len);
+
+/**
+ * @brief Write data to the flash memory
+ * 
+ * @param addr Starting address to write to
+ * @param data Data to write
+ * @param len Number of bytes to write
+ * @return uint8_t 0 if successful, 1 if failed
+ */
+uint8_t w25qxx_basic_write(uint32_t addr, uint8_t *data, uint32_t len);
+
+/**
+ * @brief Erase a sector of the flash memory
+ * 
+ * @param addr Address within the sector to erase
+ * @return uint8_t 0 if successful, 1 if failed
+ */
+uint8_t w25qxx_basic_erase_sector(uint32_t addr);
+
+/**
+ * @brief Erase a block (64KB) of the flash memory
+ * 
+ * @param addr Address within the block to erase
+ * @return uint8_t 0 if successful, 1 if failed
+ */
+uint8_t w25qxx_basic_erase_block_64k(uint32_t addr);
+
+/**
+ * @brief Get the chip ID
+ * 
+ * @param id Pointer to store the chip ID
+ * @return uint8_t 0 if successful, 1 if failed
+ */
+uint8_t w25qxx_basic_get_id(uint16_t *id);
+
+/**
+ * @brief Deinitialize the W25QXX flash memory
+ * 
+ * @return uint8_t 0 if successful, 1 if failed
  */
 uint8_t w25qxx_basic_deinit(void);
 
@@ -99,29 +140,6 @@ uint8_t w25qxx_basic_wake_up(void);
 uint8_t w25qxx_basic_chip_erase(void);
 
 /**
- * @brief      basic example get the manufacturer && device id information
- * @param[out] *manufacturer pointer to a manufacturer buffer
- * @param[out] *device_id pointer to a device id buffer
- * @return     status code
- *             - 0 success
- *             - 1 get manufacturer device id failed
- * @note       none
- */
-uint8_t w25qxx_basic_get_id(uint8_t *manufacturer, uint8_t *device_id);
-
-/**
- * @brief     basic example write
- * @param[in] addr written address
- * @param[in] *data pointer to a data buffer
- * @param[in] len data length
- * @return    status code
- *            - 0 success
- *            - 1 write failed
- * @note      none
- */
-uint8_t w25qxx_basic_write(uint32_t addr, uint8_t *data, uint32_t len);
-
-/**
  * @brief     basic example enable write
  * @return    void
  * @note      none
@@ -136,16 +154,15 @@ void w25qxx_basic_enable_write();
 void w25qxx_basic_disable_write();
 
 /**
- * @brief      basic example read
- * @param[in]  addr read address
- * @param[out] *data pointer to a data buffer
- * @param[in]  len data length
+ * @brief      basic example get the manufacturer && device id information
+ * @param[out] *manufacturer pointer to a manufacturer buffer
+ * @param[out] *device_id pointer to a device id buffer
  * @return     status code
  *             - 0 success
- *             - 1 read failed
+ *             - 1 get manufacturer device id failed
  * @note       none
  */
-uint8_t w25qxx_basic_read(uint32_t addr, uint8_t *data, uint32_t len);
+uint8_t w25qxx_basic_get_id(uint8_t *manufacturer, uint8_t *device_id);
 
 /**
  * @}

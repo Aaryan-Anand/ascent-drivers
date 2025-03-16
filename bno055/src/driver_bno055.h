@@ -1,5 +1,12 @@
 // definitions yoinked from adafruit bno055 library <3
 
+#ifndef DRIVER_BNO055_H
+#define DRIVER_BNO055_H
+
+#include "esp_err.h"
+
+#define BNO055_I2C_ADDR 0x28
+
 /* PAGE0 REGISTER DEFINITION START*/
 #define BNO_CHIP_ID_ADDR                0x00
 #define BNO_ACC_REV_ID_ADDR             0x01
@@ -171,33 +178,49 @@
 #define GYR_AM_SET_ADDR					0X1F
 /* PAGE1 REGISTERS DEFINITION END*/
 
-
+// Operation modes
 typedef enum {
-  			CONFIG = 0X00,
-  			ACCONLY = 0X01,
-  			MAGONLY = 0X02,
-  			GYRONLY = 0X03,
-  			ACCMAG = 0X04,
-  			ACCGYRO = 0X05,
-  			MAGGYRO = 0X06,
-  			AMG = 0X07,
-  			IMUPLUS = 0X08,
-  			COMPASS = 0X09,
-  			M4G = 0X0A,
-  			NDOF_FMC_OFF = 0X0B,
-  			NDOF = 0X0C
-} opr_mode;
+    CONFIG = 0X00,
+    ACCONLY = 0X01,
+    MAGONLY = 0X02,
+    GYRONLY = 0X03,
+    ACCMAG = 0X04,
+    ACCGYRO = 0X05,
+    MAGGYRO = 0X06,
+    AMG = 0X07,
+    IMUPLUS = 0X08,
+    COMPASS = 0X09,
+    M4G = 0X0A,
+    NDOF_FMC_OFF = 0X0B,
+    NDOF = 0X0C
+} bno055_opmode_t;
 
-esp_err_t i2c_master_init(void);
+/**
+ * @brief Initialize the BNO055 sensor
+ * 
+ * @param sda The GPIO pin number for SDA
+ * @param scl The GPIO pin number for SCL
+ * @param port The I2C port number
+ * @param freq The I2C frequency in Hz
+ * @return esp_err_t ESP_OK on success
+ */
+esp_err_t bno055_init(int sda, int scl, int port, uint32_t freq);
 
-uint8_t readRegister(uint8_t reg_addr);
+/**
+ * @brief Set the operation mode of the BNO055
+ * 
+ * @param mode The desired operation mode
+ */
+void bno055_set_mode(bno055_opmode_t mode);
 
-esp_err_t writeRegister(uint8_t reg_addr, uint8_t data);
+/**
+ * @brief Get calibration status
+ * 
+ * @param sys System calibration status
+ * @param gyro Gyroscope calibration status
+ * @param accel Accelerometer calibration status
+ * @param mag Magnetometer calibration status
+ */
+void bno055_get_calib(uint8_t *sys, uint8_t *gyro, uint8_t *accel, uint8_t *mag);
 
-uint8_t bno_getMode();
-
-void bno_setMode(opr_mode mode);
-
-void bno_getCalib(uint8_t *sys, uint8_t *gyro, uint8_t *accel, uint8_t *mag);
-
-void bno_init();
+#endif /* DRIVER_BNO055_H */
