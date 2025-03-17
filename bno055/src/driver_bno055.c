@@ -5,6 +5,7 @@
 #include "driver/i2c.h"
 #include "esp_log.h"
 #include "driver_bno055.h"
+#include "i2c_manager.h"
 
 static const char *TAG = "BNO055";
 
@@ -34,38 +35,12 @@ esp_err_t bno055_init(int sda, int scl, int port, uint32_t freq) {
 
 uint8_t readRegister(uint8_t reg_addr) {
     uint8_t data;
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    
-    // First, write the register address we want to read from
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (BNO055_I2C_ADDR << 1) | I2C_MASTER_WRITE, true);
-    i2c_master_write_byte(cmd, reg_addr, true);
-    
-    // Then perform a repeated start and read the data
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (BNO055_I2C_ADDR << 1) | I2C_MASTER_READ, true);
-    i2c_master_read(cmd, &data, 1, I2C_MASTER_LAST_NACK);
-    i2c_master_stop(cmd);
-
-    i2c_master_cmd_begin(i2c_port, cmd, pdMS_TO_TICKS(100));
-    i2c_cmd_link_delete(cmd);
-
+    i2c_manager_read_register(i2c_port, BNO055_I2C_ADDR, reg_addr, &data, 1);
     return data;
 }
 
 esp_err_t writeRegister(uint8_t reg_addr, uint8_t data) {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (BNO055_I2C_ADDR << 1) | I2C_MASTER_WRITE, true);
-    i2c_master_write_byte(cmd, reg_addr, true);
-    i2c_master_write_byte(cmd, data, true);
-    i2c_master_stop(cmd);
-
-    esp_err_t ret = i2c_master_cmd_begin(i2c_port, cmd, pdMS_TO_TICKS(100));
-    i2c_cmd_link_delete(cmd);
-
-    return ret;
+    return i2c_manager_write_register(i2c_port, BNO055_I2C_ADDR, reg_addr, &data, 1);
 }
 
 uint8_t bno055_get_mode(void) {

@@ -17,6 +17,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver_BMP390L.h"
+#include "i2c_manager.h"
 
 static const char *TAG = "BMP390";
 
@@ -309,35 +310,13 @@ esp_err_t bmp390_read_sensor_data(double *pressure, double *temperature) {
     return ESP_OK;
 }
 
-// I2C register read helper function
+// Replace the existing read/write functions with:
 static esp_err_t bmp390_read_register(uint8_t reg, uint8_t *data, size_t len) {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (BMP390_I2C_ADDR << 1) | I2C_MASTER_WRITE, true);
-    i2c_master_write_byte(cmd, reg, true);
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (BMP390_I2C_ADDR << 1) | I2C_MASTER_READ, true);
-    if (len > 1) {
-        i2c_master_read(cmd, data, len - 1, I2C_MASTER_ACK);
-    }
-    i2c_master_read_byte(cmd, data + len - 1, I2C_MASTER_NACK);
-    i2c_master_stop(cmd);
-    esp_err_t ret = i2c_master_cmd_begin(i2c_port, cmd, 1000 / portTICK_PERIOD_MS);
-    i2c_cmd_link_delete(cmd);
-    return ret;
+    return i2c_manager_read_register(i2c_port, BMP390_I2C_ADDR, reg, data, len);
 }
 
-// I2C register write helper function
 static esp_err_t bmp390_write_register(uint8_t reg, uint8_t *data, size_t len) {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (BMP390_I2C_ADDR << 1) | I2C_MASTER_WRITE, true);
-    i2c_master_write_byte(cmd, reg, true);
-    i2c_master_write(cmd, data, len, true);
-    i2c_master_stop(cmd);
-    esp_err_t ret = i2c_master_cmd_begin(i2c_port, cmd, 1000 / portTICK_PERIOD_MS);
-    i2c_cmd_link_delete(cmd);
-    return ret;
+    return i2c_manager_write_register(i2c_port, BMP390_I2C_ADDR, reg, data, len);
 }
 
 // Read calibration data from the sensor (registers 0x31 to 0x45, 21 bytes)  
