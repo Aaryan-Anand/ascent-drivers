@@ -344,8 +344,8 @@ esp_err_t bmp390_read_calib_data(bmp390_calib_data_t *calib) {
     calib->par_p7 = (int8_t)calib_buf[15];
     calib->par_p8 = (int8_t)calib_buf[16];
     calib->par_p9 = ((int16_t)calib_buf[18] << 8) | calib_buf[17];
-    calib->par_p10 = ((int16_t)calib_buf[20] << 8) | calib_buf[19];
-    calib->par_p11 = (int8_t)calib_buf[20]; // Adjust if necessary
+    calib->par_p10 = (int8_t)calib_buf[19];
+    calib->par_p11 = (int8_t)calib_buf[20];
 
     return ESP_OK;
 }
