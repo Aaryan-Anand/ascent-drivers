@@ -377,19 +377,28 @@ esp_err_t bmp390_init(int sda, int scl, int port, uint32_t freq) {
     i2c_port = port;
     i2c_freq = freq;
 
-    // Initialize I2C driver
+    // Initialize I2C driver only if not already installed
     i2c_config_t conf = {
         .mode = I2C_MODE_MASTER,
         .sda_io_num = sda_pin,
         .scl_io_num = scl_pin,
         .master.clk_speed = i2c_freq,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,     // Add internal pullups
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
     };
-    i2c_param_config(i2c_port, &conf);
-    esp_err_t ret = i2c_driver_install(i2c_port, conf.mode, 0, 0, 0);
+    
+    esp_err_t ret = i2c_param_config(i2c_port, &conf);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to install I2C driver");
+        ESP_LOGE(TAG, "Failed to configure I2C parameters");
         return ret;
     }
+/*
+    // Try to install driver, ignore specific error if already installed
+    ret = i2c_driver_install(i2c_port, conf.mode, 0, 0, 0);
+    if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {
+        ESP_LOGE(TAG, "Failed to install I2C driver");
+        return ret;
+    }*/
 
     // Verify chip ID (expecting 0x60 for BMP390)
     uint8_t chip_id;
