@@ -1,3 +1,15 @@
+/**
+ * @file driver_BMP390L.c
+ * @brief Implementation of the BMP390 sensor driver functions
+ *
+ * This file contains the implementation of all driver functions for the BMP390
+ * pressure and temperature sensor, including:
+ * - Sensor initialization and configuration
+ * - Raw data reading and compensation
+ * - Register access functions
+ * - Calibration data handling
+ */
+
 #include <stdio.h>
 #include <inttypes.h>
 #include "esp_log.h"
@@ -8,7 +20,7 @@
 
 static const char *TAG = "BMP390";
 
-// Static function prototypes
+// Function prototypes for internal driver operations
 static esp_err_t bmp390_read_register(uint8_t reg, uint8_t *data, size_t len);
 static esp_err_t bmp390_write_register(uint8_t reg, uint8_t *data, size_t len);
 static void bmp390_parse_sensor_data(const uint8_t *reg_data, bmp3_uncomp_data_t *uncomp_data);
@@ -16,23 +28,24 @@ static int8_t bmp390_compensate_temperature(double *temperature, const bmp3_unco
 static int8_t bmp390_compensate_pressure(double *pressure, const bmp3_uncomp_data_t *uncomp_data, bmp390_calib_data_t *calib);
 static int8_t bmp390_compensate_data(uint8_t sensor_comp, const bmp3_uncomp_data_t *uncomp_data, bmp3_data_t *comp_data, bmp390_calib_data_t *calib);
 
-// Static variables
+// Global configuration storage
 static int sda_pin;
 static int scl_pin;
 static int i2c_port;
 static uint32_t i2c_freq;
 static bmp390_calib_data_t calib_data;
 
-// BMP390 register addresses
-#define BMP390_REG_CHIP_ID    0x00
-#define BMP390_REG_PWR_CTRL   0x1B
-#define BMP390_REG_OSR        0x1C
-#define BMP390_REG_ODR        0x1D
-#define BMP390_REG_CONFIG     0x1F
-#define BMP390_REG_PRESS_DATA 0x04
-#define BMP390_REG_TEMP_DATA  0x07
-#define BMP390_REG_ERR_REG    0x02
-#define BMP390_REG_STATUS     0x03
+// BMP390 register address definitions
+#define BMP390_REG_CHIP_ID    0x00  // Chip ID register
+#define BMP390_REG_PWR_CTRL   0x1B  // Power control register
+#define BMP390_REG_OSR        0x1C  // Oversampling register
+#define BMP390_REG_ODR        0x1D  // Output data rate register
+#define BMP390_REG_CONFIG     0x1F  // Configuration register
+#define BMP390_REG_PRESS_DATA 0x04  // Pressure data register
+#define BMP390_REG_TEMP_DATA  0x07  // Temperature data register
+#define BMP390_REG_ERR_REG    0x02  // Error register
+#define BMP390_REG_STATUS     0x03  // Status register
+#define BMP390_REG_INT_CTRL   0x19  // Interrupt control register
 
 #define BMP390_STATUS_CMD_RDY 0x10
 #define BMP390_I2C_ADDR       0x76
@@ -44,6 +57,12 @@ esp_err_t bmp390_get_chip_id(uint8_t *chip_id)
 {
     return bmp390_read_register(BMP390_REG_CHIP_ID, chip_id, 1);
 }
+
+/* Read revision ID from register 0x01 */
+esp_err_t bmp390_get_rev_id(uint8_t *rev_id) {
+    return bmp390_read_register(0x01, rev_id, 1);
+}
+
 
 /* Get PWR_CTRL settings from register 0x1B */
 esp_err_t bmp390_get_pwr_ctrl(bmp390_pwr_ctrl_t *ctrl)
@@ -395,4 +414,56 @@ esp_err_t bmp390_init(int sda, int scl, int port, uint32_t freq) {
 static void bmp390_parse_sensor_data(const uint8_t *reg_data, bmp3_uncomp_data_t *uncomp_data) {
     uncomp_data->pressure    = ((uint32_t)reg_data[2] << 16) | ((uint32_t)reg_data[1] << 8) | reg_data[0];
     uncomp_data->temperature = ((uint32_t)reg_data[5] << 16) | ((uint32_t)reg_data[4] << 8) | reg_data[3];
+}
+
+/**
+ * @brief Get current interrupt configuration from INT_CTRL register
+ * 
+ * Reads the current interrupt settings from the sensor's INT_CTRL register
+ * and decodes them into the configuration structure.
+ *
+ * @param[out] int_config Pointer to structure to store the configuration
+ * @return ESP_OK if successful, error code otherwise
+ */
+esp_err_t bmp390_get_int_config(bmp390_int_config_t *int_config) {
+    uint8_t reg;
+    esp_err_t ret = bmp390_read_register(BMP390_REG_INT_CTRL, &reg, 1);
+    if (ret != ESP_OK)
+        return ret;
+
+    // Decode interrupt configuration bits
+    int_config->drdy_en   = (reg & (1 << 6)) ? true : false;
+    int_config->fwtm_en   = (reg & (1 << 3)) ? true : false;
+    int_config->ffull_en  = (reg & (1 << 4)) ? true : false;
+    int_config->int_latch = (reg & (1 << 2)) ? true : false;
+    int_config->int_od    = (reg & (1 << 0)) ? true : false;
+    int_config->int_level = (reg & (1 << 1)) ? true : false;
+
+    return ESP_OK;
+}
+
+/**
+ * @brief Configure interrupt settings in INT_CTRL register
+ * 
+ * Sets up the interrupt behavior according to the provided configuration:
+ * - Data Ready interrupt (new pressure/temperature data available)
+ * - FIFO interrupts (watermark and full conditions)
+ * - Interrupt pin characteristics (open-drain/push-pull, active high/low)
+ * - Interrupt latching behavior
+ *
+ * @param[in] int_config Pointer to desired interrupt configuration
+ * @return ESP_OK if successful, error code otherwise
+ */
+esp_err_t bmp390_set_int_config(const bmp390_int_config_t *int_config) {
+    uint8_t config = 0;
+    
+    // Assemble configuration byte from settings
+    if (int_config->drdy_en)   config |= (1 << 6);
+    if (int_config->fwtm_en)   config |= (1 << 3);
+    if (int_config->ffull_en)  config |= (1 << 4);
+    if (int_config->int_latch) config |= (1 << 2);
+    if (int_config->int_od)    config |= (1 << 0);
+    if (int_config->int_level) config |= (1 << 1);
+
+    return bmp390_write_register(BMP390_REG_INT_CTRL, &config, 1);
 }
