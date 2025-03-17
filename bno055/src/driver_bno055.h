@@ -223,4 +223,12 @@ void bno055_set_mode(bno055_opmode_t mode);
  */
 void bno055_get_calib(uint8_t *sys, uint8_t *gyro, uint8_t *accel, uint8_t *mag);
 
+/**
+ * @brief Read a register from the BNO055
+ * 
+ * @param reg_addr The address of the register to read
+ * @return uint8_t The value read from the register
+ */
+uint8_t readRegister(uint8_t reg_addr);
+
 #endif /* DRIVER_BNO055_H */
