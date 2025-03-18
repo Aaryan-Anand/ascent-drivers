@@ -25,6 +25,10 @@
 #define H3LIS331DL_INT1_SRC          0x31    // Interrupt 1 source register
 #define H3LIS331DL_INT1_THS          0x32    // Interrupt 1 threshold register
 #define H3LIS331DL_INT1_DURATION      0x33    // Interrupt 1 duration register
+#define H3LIS331DL_INT2_CFG          0x34    // Interrupt 2 configuration register
+#define H3LIS331DL_INT2_SRC          0x35    // Interrupt 2 source register
+#define H3LIS331DL_INT2_THS          0x36    // Interrupt 2 threshold register
+#define H3LIS331DL_INT2_DURATION      0x37    // Interrupt 2 duration register
 
 // Axes enable configuration (bits 0-2)
 typedef enum {
@@ -96,11 +100,11 @@ typedef enum {
 
 // Data signal on INT2 control (bits 3-4)
 typedef enum {
-    H3LIS331DL_INT2_SRC = 0x00,         // INT2 source
+    H3LIS331DL_INT2_DATA_SRC = 0x00,         // INT2 source
     H3LIS331DL_INT2_OR_INT1_SRC = 0x08, // INT1 or INT2 source
     H3LIS331DL_INT2_DRDY = 0x10,        // Data ready
     H3LIS331DL_INT2_BOOT = 0x18         // Boot running
-} h3lis331dl_int2_cfg_t;
+} h3lis331dl_int2_data_t;
 
 // Interrupt active level configuration (bit 7)
 typedef enum {
@@ -199,6 +203,11 @@ typedef struct {
     uint8_t reserved : 1;     // Reserved bit
 } h3lis331dl_int1_src_t;
 
+typedef enum {
+    H3LIS331DL_INT1 = 0,
+    H3LIS331DL_INT2 = 1
+} h3lis331dl_interrupt_t;
+
 /**
  * @brief Initialize the H3LIS331DL sensor
  * 
@@ -254,8 +263,8 @@ esp_err_t h3lis331dl_reboot_memory(void);
 esp_err_t h3lis331dl_get_int1_config(h3lis331dl_int1_data_t *int_cfg);
 esp_err_t h3lis331dl_set_int1_config(h3lis331dl_int1_data_t int_cfg);
 
-esp_err_t h3lis331dl_get_int2_config(h3lis331dl_int2_cfg_t *int_cfg);
-esp_err_t h3lis331dl_set_int2_config(h3lis331dl_int2_cfg_t int_cfg);
+esp_err_t h3lis331dl_get_int2_config(h3lis331dl_int2_data_t *int_cfg);
+esp_err_t h3lis331dl_set_int2_config(h3lis331dl_int2_data_t int_cfg);
 
 esp_err_t h3lis331dl_get_int_level(h3lis331dl_int_level_t *level);
 esp_err_t h3lis331dl_set_int_level(h3lis331dl_int_level_t level);

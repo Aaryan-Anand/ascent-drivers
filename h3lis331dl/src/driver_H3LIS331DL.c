@@ -382,17 +382,17 @@ esp_err_t h3lis331dl_set_int1_latch(bool latch)
     return ret;
 }
 
-esp_err_t h3lis331dl_get_int2_config(h3lis331dl_int2_cfg_t *int_cfg)
+esp_err_t h3lis331dl_get_int2_config(h3lis331dl_int2_data_t *int_cfg)
 {
     uint8_t reg_value;
     esp_err_t ret = h3lis331dl_read_reg(H3LIS331DL_CTRL_REG3, &reg_value, 1);
     if (ret == ESP_OK) {
-        *int_cfg = (h3lis331dl_int2_cfg_t)(reg_value & 0x18);  // Mask bits 3-4
+        *int_cfg = (h3lis331dl_int2_data_t)(reg_value & 0x18);  // Mask bits 3-4
     }
     return ret;
 }
 
-esp_err_t h3lis331dl_set_int2_config(h3lis331dl_int2_cfg_t int_cfg)
+esp_err_t h3lis331dl_set_int2_config(h3lis331dl_int2_data_t int_cfg)
 {
     uint8_t reg_value;
     esp_err_t ret = h3lis331dl_read_reg(H3LIS331DL_CTRL_REG3, &reg_value, 1);
@@ -665,7 +665,6 @@ esp_err_t h3lis331dl_read_accel(double *x_accel, double *y_accel, double *z_acce
 
     return ESP_OK;
 }
-
 esp_err_t h3lis331dl_get_int1_cfg(h3lis331dl_int1_config_t *config)
 {
     uint8_t reg_value;
@@ -792,3 +791,4 @@ esp_err_t h3lis331dl_set_int1_duration(uint8_t duration) {
 esp_err_t h3lis331dl_get_int1_duration(uint8_t *duration) {
     return h3lis331dl_read_reg(H3LIS331DL_INT1_DURATION, duration, 1);
 }
+
