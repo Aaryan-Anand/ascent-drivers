@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>    // Add this for fabs()
 #include "esp_log.h"
 #include "driver/i2c.h"
 #include "freertos/FreeRTOS.h"
@@ -16,6 +17,11 @@ static i2c_port_t current_i2c_port;
 // Static variables to store scale and endian settings
 static h3lis331dl_scale_t current_scale = H3LIS331DL_SCALE_100G;
 static h3lis331dl_endian_t current_endian = H3LIS331DL_BIG_ENDIAN;
+
+// Add these static function declarations at the top of the file, after the includes
+static esp_err_t h3lis331dl_write_reg(uint8_t reg_addr, uint8_t data);
+static esp_err_t h3lis331dl_read_reg(uint8_t reg_addr, uint8_t *data, size_t len);
+static uint8_t get_int_reg_addr(h3lis331dl_interrupt_t int_num, uint8_t base_reg);
 
 // Helper function to convert raw values to g's based on scale
 double convert_raw_to_g(int16_t raw_value, bool is_threshold) {
@@ -665,10 +671,16 @@ esp_err_t h3lis331dl_read_accel(double *x_accel, double *y_accel, double *z_acce
 
     return ESP_OK;
 }
-esp_err_t h3lis331dl_get_int1_cfg(h3lis331dl_int1_config_t *config)
-{
+
+// Helper function to get the appropriate register address based on interrupt number
+static uint8_t get_int_reg_addr(h3lis331dl_interrupt_t int_num, uint8_t base_reg) {
+    return base_reg + (int_num * 4);  // INT2 registers are 4 addresses higher than INT1
+}
+
+esp_err_t h3lis331dl_get_int_cfg(h3lis331dl_interrupt_t int_num, h3lis331dl_int1_config_t *config) {
+    uint8_t reg_addr = get_int_reg_addr(int_num, H3LIS331DL_INT1_CFG);
     uint8_t reg_value;
-    esp_err_t ret = h3lis331dl_read_reg(H3LIS331DL_INT1_CFG, &reg_value, 1);
+    esp_err_t ret = h3lis331dl_read_reg(reg_addr, &reg_value, 1);
     
     if (ret == ESP_OK) {
         config->x_low_enable = (reg_value & 0x01) != 0;    // XLIE
@@ -679,27 +691,29 @@ esp_err_t h3lis331dl_get_int1_cfg(h3lis331dl_int1_config_t *config)
         config->z_high_enable = (reg_value & 0x20) != 0;   // ZHIE
         config->interrupt_mode = (h3lis331dl_int_mode_t)(reg_value & 0x80); // AOI
     }
-
     return ret;
 }
 
-esp_err_t h3lis331dl_set_int1_cfg(uint8_t enables_mask, bool and_mode)
+esp_err_t h3lis331dl_set_int_cfg(h3lis331dl_interrupt_t int_num, uint8_t enables_mask, bool and_mode)
 {
     uint8_t reg_value = enables_mask & 0x3F;  // Mask to ensure only bits 0-5 are used
     if (and_mode) {
         reg_value |= 0x80;  // Set AOI bit for AND mode
     }
-    return h3lis331dl_write_reg(H3LIS331DL_INT1_CFG, reg_value);
+    uint8_t reg_addr = get_int_reg_addr(int_num, H3LIS331DL_INT1_CFG);
+    return h3lis331dl_write_reg(reg_addr, reg_value);
 }
 
-esp_err_t h3lis331dl_set_int1_simple(h3lis331dl_axis_t axis, h3lis331dl_int_event_t event_type, bool enable)
+esp_err_t h3lis331dl_set_int_simple(h3lis331dl_interrupt_t int_num, h3lis331dl_axis_t axis, 
+                                   h3lis331dl_int_event_t event_type, bool enable)
 {
     if (axis > H3LIS331DL_AXIS_Z) {  // Validate axis parameter
         return ESP_ERR_INVALID_ARG;
     }
 
     uint8_t current_value;
-    esp_err_t ret = h3lis331dl_read_reg(H3LIS331DL_INT1_CFG, &current_value, 1);
+    uint8_t reg_addr = get_int_reg_addr(int_num, H3LIS331DL_INT1_CFG);
+    esp_err_t ret = h3lis331dl_read_reg(reg_addr, &current_value, 1);
     if (ret != ESP_OK) {
         return ret;
     }
@@ -715,13 +729,14 @@ esp_err_t h3lis331dl_set_int1_simple(h3lis331dl_axis_t axis, h3lis331dl_int_even
     }
 
     // Preserve AOI bit (bit 7)
-    return h3lis331dl_write_reg(H3LIS331DL_INT1_CFG, current_value);
+    return h3lis331dl_write_reg(reg_addr, current_value);
 }
 
-esp_err_t h3lis331dl_get_int1_src(h3lis331dl_int1_src_t *src)
+esp_err_t h3lis331dl_get_int_src(h3lis331dl_interrupt_t int_num, h3lis331dl_int1_src_t *src)
 {
     uint8_t reg_value;
-    esp_err_t ret = h3lis331dl_read_reg(H3LIS331DL_INT1_SRC, &reg_value, 1);
+    uint8_t reg_addr = get_int_reg_addr(int_num, H3LIS331DL_INT1_SRC);
+    esp_err_t ret = h3lis331dl_read_reg(reg_addr, &reg_value, 1);
     
     if (ret == ESP_OK) {
         src->x_low = (reg_value & 0x01) != 0;           // Bit 0
@@ -737,7 +752,7 @@ esp_err_t h3lis331dl_get_int1_src(h3lis331dl_int1_src_t *src)
     return ret;
 }
 
-esp_err_t h3lis331dl_set_int1_threshold(double threshold_g) {
+esp_err_t h3lis331dl_set_int_threshold(h3lis331dl_interrupt_t int_num, double threshold_g) {
     // Check if threshold exceeds current scale
     double max_g;
     switch (current_scale) {
@@ -760,19 +775,21 @@ esp_err_t h3lis331dl_set_int1_threshold(double threshold_g) {
     }
     
     uint8_t threshold = convert_g_to_raw(threshold_g, true);
-    return h3lis331dl_write_reg(H3LIS331DL_INT1_THS, threshold);
+    uint8_t reg_addr = get_int_reg_addr(int_num, H3LIS331DL_INT1_THS);
+    return h3lis331dl_write_reg(reg_addr, threshold);
 }
 
-esp_err_t h3lis331dl_get_int1_threshold(double *threshold_g) {
+esp_err_t h3lis331dl_get_int_threshold(h3lis331dl_interrupt_t int_num, double *threshold_g) {
     uint8_t threshold;
-    esp_err_t ret = h3lis331dl_read_reg(H3LIS331DL_INT1_THS, &threshold, 1);
+    uint8_t reg_addr = get_int_reg_addr(int_num, H3LIS331DL_INT1_THS);
+    esp_err_t ret = h3lis331dl_read_reg(reg_addr, &threshold, 1);
     if (ret == ESP_OK) {
-        *threshold_g = convert_threshold_to_g(threshold);
+        *threshold_g = convert_raw_to_g(threshold, true);
     }
     return ret;
 }
 
-esp_err_t h3lis331dl_set_int1_duration(uint8_t duration) {
+esp_err_t h3lis331dl_set_int_duration(h3lis331dl_interrupt_t int_num, uint8_t duration) {
     // Check if the duration is within valid limits based on ODR
     // Assuming ODR is set to 50Hz, the maximum duration can be calculated
     // For example, if ODR is 50Hz, the duration can be set from 0 to 127
@@ -782,13 +799,13 @@ esp_err_t h3lis331dl_set_int1_duration(uint8_t duration) {
     // For simplicity, let's assume the maximum is 127 for now
     // You can adjust this based on your ODR settings
     if (duration > 127) {
-        return ESP_ERR_INVALID_ARG; // Invalid duration
+        return ESP_ERR_INVALID_ARG;
     }
-
-    return h3lis331dl_write_reg(H3LIS331DL_INT1_DURATION, duration);
+    uint8_t reg_addr = get_int_reg_addr(int_num, H3LIS331DL_INT1_DURATION);
+    return h3lis331dl_write_reg(reg_addr, duration);
 }
 
-esp_err_t h3lis331dl_get_int1_duration(uint8_t *duration) {
-    return h3lis331dl_read_reg(H3LIS331DL_INT1_DURATION, duration, 1);
+esp_err_t h3lis331dl_get_int_duration(h3lis331dl_interrupt_t int_num, uint8_t *duration) {
+    uint8_t reg_addr = get_int_reg_addr(int_num, H3LIS331DL_INT1_DURATION);
+    return h3lis331dl_read_reg(reg_addr, duration, 1);
 }
-

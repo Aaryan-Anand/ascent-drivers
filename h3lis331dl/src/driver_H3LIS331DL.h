@@ -32,14 +32,14 @@
 
 // Axes enable configuration (bits 0-2)
 typedef enum {
-    H3LIS331DL_AXIS_NONE = 0x00,
-    H3LIS331DL_AXIS_X = 0x01,
-    H3LIS331DL_AXIS_Y = 0x02,
-    H3LIS331DL_AXIS_Z = 0x04,
-    H3LIS331DL_AXIS_XY = 0x03,
-    H3LIS331DL_AXIS_XZ = 0x05,
-    H3LIS331DL_AXIS_YZ = 0x06,
-    H3LIS331DL_AXIS_XYZ = 0x07
+    H3LIS331DL_CONFIG_NONE = 0x00,
+    H3LIS331DL_CONFIG_X = 0x01,
+    H3LIS331DL_CONFIG_Y = 0x02,
+    H3LIS331DL_CONFIG_Z = 0x04,
+    H3LIS331DL_CONFIG_XY = 0x03,
+    H3LIS331DL_CONFIG_XZ = 0x05,
+    H3LIS331DL_CONFIG_YZ = 0x06,
+    H3LIS331DL_CONFIG_XYZ = 0x07
 } h3lis331dl_axes_config_t;
 
 // Data rate configuration (bits 3-4)
@@ -217,6 +217,24 @@ typedef enum {
 esp_err_t h3lis331dl_init(i2c_port_t port);
 
 /**
+ * @brief Convert g's to the appropriate register value (threshold) based on current scale
+ * 
+ * @param g_value Value in g's to convert
+ * @param is_threshold If true, convert to threshold (7-bit), otherwise convert to raw (16-bit)
+ * @return uint8_t Converted value
+ */
+uint8_t convert_g_to_raw(double g_value, bool is_threshold);
+
+/**
+ * @brief Convert raw acceleration value to g's based on scale
+ * 
+ * @param raw_value Raw acceleration value
+ * @param is_threshold If true, treat the value as a threshold
+ * @return double Converted value in g's
+ */
+double convert_raw_to_g(int16_t raw_value, bool is_threshold);
+
+/**
  * @brief Read accelerometer data
  * 
  * @param[out] x_accel Pointer to store X-axis acceleration in g's
@@ -329,94 +347,85 @@ esp_err_t h3lis331dl_get_reference(uint8_t *reference);
 // Function declaration for reading status
 esp_err_t h3lis331dl_get_status(h3lis331dl_status_t *status);
 
-
 /**
- * @brief Read current INT1 interrupt settings
+ * @brief Read current interrupt settings
  * 
+ * @param int_num Which interrupt (INT1 or INT2)
  * @param config Pointer to store the current configuration
  * @return esp_err_t ESP_OK on success
  */
-esp_err_t h3lis331dl_get_int1_cfg(h3lis331dl_int1_config_t *config);
+esp_err_t h3lis331dl_get_int_cfg(h3lis331dl_interrupt_t int_num, h3lis331dl_int1_config_t *config);
 
 /**
- * @brief Configure INT1 interrupt settings using a single value for XYZ enables
+ * @brief Configure interrupt settings using a single value for XYZ enables
  * 
+ * @param int_num Which interrupt (INT1 or INT2)
  * @param enables_mask Bit mask for enables (bits 0-5: XLIE,XHIE,YLIE,YHIE,ZLIE,ZHIE)
  * @param and_mode If true, use AND combination (AOI=1), if false use OR combination (AOI=0)
  * @return esp_err_t ESP_OK on success
  */
-esp_err_t h3lis331dl_set_int1_cfg(uint8_t enables_mask, bool and_mode);
+esp_err_t h3lis331dl_set_int_cfg(h3lis331dl_interrupt_t int_num, uint8_t enables_mask, bool and_mode);
 
 /**
- * @brief Configure a single interrupt enable for INT1
+ * @brief Configure a single interrupt enable
  * 
+ * @param int_num Which interrupt (INT1 or INT2)
  * @param axis Which axis (X, Y, or Z)
  * @param event_type Type of event (low or high)
  * @param enable Enable or disable the specified interrupt
  * @return esp_err_t ESP_OK on success
  */
-esp_err_t h3lis331dl_set_int1_simple(h3lis331dl_axis_t axis, h3lis331dl_int_event_t event_type, bool enable);
+esp_err_t h3lis331dl_set_int_simple(h3lis331dl_interrupt_t int_num, h3lis331dl_axis_t axis, 
+                                   h3lis331dl_int_event_t event_type, bool enable);
 
 /**
- * @brief Read INT1 source register
+ * @brief Read interrupt source register
  * 
  * Note: Reading this register clears the interrupt signal and 
  * refreshes the data if latch is enabled
  * 
+ * @param int_num Which interrupt (INT1 or INT2)
  * @param[out] src Pointer to store the interrupt source data
  * @return esp_err_t ESP_OK on success
  */
-esp_err_t h3lis331dl_get_int1_src(h3lis331dl_int1_src_t *src);
+esp_err_t h3lis331dl_get_int_src(h3lis331dl_interrupt_t int_num, h3lis331dl_int1_src_t *src);
 
 /**
- * @brief Set interrupt 1 threshold
+ * @brief Set interrupt threshold
  * 
+ * @param int_num Which interrupt (INT1 or INT2)
  * @param threshold_g Threshold in g's (will be converted based on current scale)
  *                   Max values: ±100g, ±200g, or ±400g depending on scale
  * @return esp_err_t ESP_OK on success, ESP_ERR_INVALID_ARG if threshold exceeds scale
  */
-esp_err_t h3lis331dl_set_int1_threshold(double threshold_g);
+esp_err_t h3lis331dl_set_int_threshold(h3lis331dl_interrupt_t int_num, double threshold_g);
 
 /**
- * @brief Get current interrupt 1 threshold
+ * @brief Get current interrupt threshold
  * 
+ * @param int_num Which interrupt (INT1 or INT2)
  * @param[out] threshold_g Pointer to store threshold value in g's
  * @return esp_err_t ESP_OK on success
  */
-esp_err_t h3lis331dl_get_int1_threshold(double *threshold_g);
+esp_err_t h3lis331dl_get_int_threshold(h3lis331dl_interrupt_t int_num, double *threshold_g);
 
 /**
- * @brief Convert g's to the appropriate register value (threshold) based on current scale
+ * @brief Set interrupt duration
  * 
- * @param g_value Value in g's to convert
- * @param is_threshold If true, convert to threshold (7-bit), otherwise convert to raw (16-bit)
- * @return uint8_t Converted value
- */
-uint8_t convert_g_to_raw(double g_value, bool is_threshold);
-
-/**
- * @brief Convert raw acceleration value to g's based on scale
- * 
- * @param raw_value Raw acceleration value
- * @param is_threshold If true, treat the value as a threshold
- * @return double Converted value in g's
- */
-double convert_raw_to_g(int16_t raw_value, bool is_threshold);
-
-/**
- * @brief Set interrupt 1 duration
- * 
+ *
+ * @param int_num Which interrupt (INT1 or INT2)
  * @param duration Duration value (0-127) based on ODR
  * @return esp_err_t ESP_OK on success, ESP_ERR_INVALID_ARG if duration exceeds max
  */
-esp_err_t h3lis331dl_set_int1_duration(uint8_t duration);
+esp_err_t h3lis331dl_set_int_duration(h3lis331dl_interrupt_t int_num, uint8_t duration);
 
 /**
- * @brief Get current interrupt 1 duration
+ * @brief Get current interrupt duration
  * 
+ * @param int_num Which interrupt (INT1 or INT2)
  * @param[out] duration Pointer to store the current duration value
  * @return esp_err_t ESP_OK on success
  */
-esp_err_t h3lis331dl_get_int1_duration(uint8_t *duration);
+esp_err_t h3lis331dl_get_int_duration(h3lis331dl_interrupt_t int_num, uint8_t *duration);
 
 #endif /* DRIVER_H3LIS331DL_H */ 
