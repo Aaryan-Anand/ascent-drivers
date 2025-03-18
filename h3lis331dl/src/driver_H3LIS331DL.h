@@ -2,6 +2,8 @@
 #define DRIVER_H3LIS331DL_H
 
 #include "esp_err.h"
+#include "driver/i2c.h"
+#include "i2c_manager.h"
 
 // Register definitions
 #define H3LIS331DL_CTRL_REG1          0x20
@@ -11,13 +13,10 @@
 /**
  * @brief Initialize the H3LIS331DL sensor
  * 
- * @param sda The GPIO pin number for SDA
- * @param scl The GPIO pin number for SCL
  * @param port The I2C port number
- * @param freq The I2C frequency in Hz
  * @return esp_err_t ESP_OK on success
  */
-esp_err_t h3lis331dl_init(int sda, int scl, int port, uint32_t freq);
+esp_err_t h3lis331dl_init(i2c_port_t port);
 
 /**
  * @brief Read accelerometer data

@@ -4,49 +4,40 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver_H3LIS331DL.h"
+#include "i2c_manager.h"
 
 static const char *TAG = "H3LIS331DL";
 
-// Static variables to store pin configurations
-static int sda_pin;
-static int scl_pin;
-static int i2c_port;
-static uint32_t i2c_freq;
-
 #define H3LIS331DL_I2C_ADDR 0x18    // H3LIS331DL I2C address
 
-esp_err_t h3lis331dl_init(int sda, int scl, int port, uint32_t freq) {
-    // Store pin configurations
-    sda_pin = sda;
-    scl_pin = scl;
-    i2c_port = port;
-    i2c_freq = freq;
+// Modify init function to just store port number
+static i2c_port_t current_i2c_port;
 
-    // Initialize I2C
-    i2c_config_t conf = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = sda_pin,
-        .scl_io_num = scl_pin,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = i2c_freq,
-    };
-    esp_err_t err = i2c_param_config(i2c_port, &conf);
-    if (err != ESP_OK) {
-        return err;
+esp_err_t h3lis331dl_init(i2c_port_t port) {
+    // Store only the port number since I2C is initialized in main
+    current_i2c_port = port;
+    
+    // Check if I2C is already initialized
+    if (!i2c_manager_is_initialized(port)) {
+        ESP_LOGE(TAG, "I2C port %d not initialized", port);
+        return ESP_ERR_INVALID_STATE;
     }
-    return i2c_driver_install(i2c_port, conf.mode, 0, 0, 0);
+    
+    return ESP_OK;
 }
 
+// Update register write function to use i2c_manager
 static esp_err_t h3lis331dl_write_reg(uint8_t reg_addr, uint8_t data)
 {
-    uint8_t write_buf[2] = {reg_addr, data};
-    return i2c_master_write_to_device(i2c_port, H3LIS331DL_I2C_ADDR, write_buf, sizeof(write_buf), pdMS_TO_TICKS(100));
+    return i2c_manager_write_register(current_i2c_port, H3LIS331DL_I2C_ADDR, 
+                                    reg_addr, &data, 1);
 }
 
+// Update register read function to use i2c_manager
 static esp_err_t h3lis331dl_read_reg(uint8_t reg_addr, uint8_t *data, size_t len)
 {
-    return i2c_master_write_read_device(i2c_port, H3LIS331DL_I2C_ADDR, &reg_addr, 1, data, len, pdMS_TO_TICKS(100));
+    return i2c_manager_read_register(current_i2c_port, H3LIS331DL_I2C_ADDR,
+                                   reg_addr, data, len);
 }
 
 void h3lis331dl_task(void *pvParameters)
@@ -85,6 +76,6 @@ void h3lis331dl_task(void *pvParameters)
 
 void app_main(void)
 {
-    ESP_ERROR_CHECK(h3lis331dl_init(sda_pin, scl_pin, i2c_port, i2c_freq));
+    // Only create the task since I2C is initialized in main.c
     xTaskCreate(h3lis331dl_task, "h3lis331dl_task", 2048, NULL, 5, NULL);
 }

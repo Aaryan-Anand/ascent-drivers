@@ -9,28 +9,22 @@
 
 static const char *TAG = "BNO055";
 
-// Static variables to store pin configurations
-static int sda_pin;
-static int scl_pin;
 static int i2c_port;
-static uint32_t i2c_freq;
 
-esp_err_t bno055_init(int sda, int scl, int port, uint32_t freq) {
-    // Store pin configurations
-    sda_pin = sda;
-    scl_pin = scl;
+esp_err_t bno055_init(i2c_port_t port) {
+    // Store only the port number
     i2c_port = port;
-    i2c_freq = freq;
+    
+    // Check if I2C is already initialized
+    if (!i2c_manager_is_initialized(port)) {
+        ESP_LOGE(TAG, "I2C port %d not initialized", port);
+        return ESP_ERR_INVALID_STATE;
+    }
 
-    // Initialize I2C
-    i2c_config_t conf = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = sda_pin,
-        .scl_io_num = scl_pin,
-        .master.clk_speed = i2c_freq,
-    };
-    i2c_param_config(i2c_port, &conf);
-    return i2c_driver_install(i2c_port, conf.mode, 0, 0, 0);
+    // Add any BNO055-specific initialization here
+    // (chip ID verification, sensor configuration, etc.)
+
+    return ESP_OK;
 }
 
 uint8_t readRegister(uint8_t reg_addr) {

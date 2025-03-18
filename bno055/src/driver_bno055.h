@@ -4,6 +4,7 @@
 #define DRIVER_BNO055_H
 
 #include "esp_err.h"
+#include "driver/i2c.h"
 
 #define BNO055_I2C_ADDR 0x28
 
@@ -198,13 +199,10 @@ typedef enum {
 /**
  * @brief Initialize the BNO055 sensor
  * 
- * @param sda The GPIO pin number for SDA
- * @param scl The GPIO pin number for SCL
  * @param port The I2C port number
- * @param freq The I2C frequency in Hz
  * @return esp_err_t ESP_OK on success
  */
-esp_err_t bno055_init(int sda, int scl, int port, uint32_t freq);
+esp_err_t bno055_init(i2c_port_t port);
 
 /**
  * @brief Set the operation mode of the BNO055

@@ -29,11 +29,7 @@ static int8_t bmp390_compensate_temperature(double *temperature, const bmp3_unco
 static int8_t bmp390_compensate_pressure(double *pressure, const bmp3_uncomp_data_t *uncomp_data, bmp390_calib_data_t *calib);
 static int8_t bmp390_compensate_data(uint8_t sensor_comp, const bmp3_uncomp_data_t *uncomp_data, bmp3_data_t *comp_data, bmp390_calib_data_t *calib);
 
-// Global configuration storage
-static int sda_pin;
-static int scl_pin;
 static int i2c_port;
-static uint32_t i2c_freq;
 static bmp390_calib_data_t calib_data;
 
 // BMP390 register address definitions
@@ -349,39 +345,19 @@ esp_err_t bmp390_read_calib_data(bmp390_calib_data_t *calib) {
 }
 
 // bmp390_init: Initialize I2C, check chip ID, and read calibration data
-esp_err_t bmp390_init(int sda, int scl, int port, uint32_t freq) {
-    // Store pin configurations
-    sda_pin = sda;
-    scl_pin = scl;
+esp_err_t bmp390_init(i2c_port_t port) {
+    // Store only the port number
     i2c_port = port;
-    i2c_freq = freq;
-
-    // Initialize I2C driver only if not already installed
-    i2c_config_t conf = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = sda_pin,
-        .scl_io_num = scl_pin,
-        .master.clk_speed = i2c_freq,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,     // Add internal pullups
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-    };
     
-    esp_err_t ret = i2c_param_config(i2c_port, &conf);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to configure I2C parameters");
-        return ret;
+    // Check if I2C is already initialized
+    if (!i2c_manager_is_initialized(port)) {
+        ESP_LOGE(TAG, "I2C port %d not initialized", port);
+        return ESP_ERR_INVALID_STATE;
     }
-/*
-    // Try to install driver, ignore specific error if already installed
-    ret = i2c_driver_install(i2c_port, conf.mode, 0, 0, 0);
-    if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {
-        ESP_LOGE(TAG, "Failed to install I2C driver");
-        return ret;
-    }*/
 
     // Verify chip ID (expecting 0x60 for BMP390)
     uint8_t chip_id;
-    ret = bmp390_read_register(BMP390_REG_CHIP_ID, &chip_id, 1);
+    esp_err_t ret = bmp390_read_register(BMP390_REG_CHIP_ID, &chip_id, 1);
     if (ret != ESP_OK || chip_id != 0x60) {
         ESP_LOGE(TAG, "Failed to read chip ID or incorrect chip ID (0x%x)", chip_id);
         return ESP_FAIL;

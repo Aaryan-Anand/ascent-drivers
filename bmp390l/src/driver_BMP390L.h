@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "esp_err.h"
+#include "driver/i2c.h"
 
 // Type definitions
 typedef struct {
@@ -138,7 +139,7 @@ typedef struct {
 } bmp390_int_config_t;
 
 // Public function prototypes
-esp_err_t bmp390_init(int sda, int scl, int port, uint32_t freq);
+esp_err_t bmp390_init(i2c_port_t port);
 esp_err_t bmp390_read_sensor_data(double *pressure, double *temperature);
 esp_err_t bmp390_read_calib_data(bmp390_calib_data_t *calib);
 
