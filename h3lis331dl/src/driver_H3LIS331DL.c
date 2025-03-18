@@ -13,6 +13,73 @@ static const char *TAG = "H3LIS331DL";
 // Modify init function to just store port number
 static i2c_port_t current_i2c_port;
 
+// Static variables to store scale and endian settings
+static h3lis331dl_scale_t current_scale = H3LIS331DL_SCALE_100G;
+static h3lis331dl_endian_t current_endian = H3LIS331DL_BIG_ENDIAN;
+
+// Helper function to convert raw values to g's based on scale
+double convert_raw_to_g(int16_t raw_value, bool is_threshold) {
+    double scale_factor;
+    switch (current_scale) {
+        case H3LIS331DL_SCALE_100G:
+            scale_factor = 100.0 / 32768.0;  // ±100g range
+            break;
+        case H3LIS331DL_SCALE_200G:
+            scale_factor = 200.0 / 32768.0;  // ±200g range
+            break;
+        case H3LIS331DL_SCALE_400G:
+            scale_factor = 400.0 / 32768.0;  // ±400g range
+            break;
+        default:
+            scale_factor = 100.0 / 32768.0;  // Default to ±100g range
+            break;
+    }
+
+    // If it's a threshold, we need to convert it differently
+    if (is_threshold) {
+        return raw_value * scale_factor; // Return in g's for threshold
+    } else {
+        return raw_value * scale_factor; // Return in g's for raw value
+    }
+}
+
+uint8_t convert_g_to_raw(double g_value, bool is_threshold) {
+    double max_g;
+    switch (current_scale) {
+        case H3LIS331DL_SCALE_100G:
+            max_g = 100.0;
+            break;
+        case H3LIS331DL_SCALE_200G:
+            max_g = 200.0;
+            break;
+        case H3LIS331DL_SCALE_400G:
+            max_g = 400.0;
+            break;
+        default:
+            max_g = 100.0;  // Default to ±100g range
+            break;
+    }
+
+    // Convert g value to the appropriate register value
+    double abs_g = fabs(g_value);
+    uint8_t value;
+
+    if (is_threshold) {
+        // Convert g value to 7-bit threshold (0-127)
+        value = (uint8_t)((abs_g * 127.0) / max_g);
+    } else {
+        // Convert g value to 16-bit raw value
+        value = (uint8_t)((abs_g * 32768.0) / max_g); // 16-bit conversion
+    }
+
+    // Ensure we don't exceed the respective bit limits
+    if (is_threshold) {
+        return value & 0x7F; // 7-bit threshold
+    } else {
+        return value; // 16-bit raw value
+    }
+}
+
 esp_err_t h3lis331dl_init(i2c_port_t port) {
     // Store only the port number since I2C is initialized in main
     current_i2c_port = port;
@@ -38,7 +105,16 @@ esp_err_t h3lis331dl_init(i2c_port_t port) {
     }
 
     ESP_LOGI(TAG, "H3LIS331DL initialized successfully, chip ID: 0x%x", chip_id);
-    return ESP_OK;
+
+    // Read initial scale and endian settings
+    uint8_t reg_value;
+    ret = h3lis331dl_read_reg(H3LIS331DL_CTRL_REG4, &reg_value, 1);
+    if (ret == ESP_OK) {
+        current_scale = (h3lis331dl_scale_t)(reg_value & 0x30);
+        current_endian = (h3lis331dl_endian_t)(reg_value & 0x40);
+    }
+    
+    return ret;
 }
 
 // Update register write function to use i2c_manager
@@ -259,17 +335,17 @@ esp_err_t h3lis331dl_reboot_memory(void)
     return ret;
 }
 
-esp_err_t h3lis331dl_get_int1_config(h3lis331dl_int1_cfg_t *int_cfg)
+esp_err_t h3lis331dl_get_int1_config(h3lis331dl_int1_data_t *int_cfg)
 {
     uint8_t reg_value;
     esp_err_t ret = h3lis331dl_read_reg(H3LIS331DL_CTRL_REG3, &reg_value, 1);
     if (ret == ESP_OK) {
-        *int_cfg = (h3lis331dl_int1_cfg_t)(reg_value & 0x03);  // Mask bits 0-1
+        *int_cfg = (h3lis331dl_int1_data_t)(reg_value & 0x03);  // Mask bits 0-1
     }
     return ret;
 }
 
-esp_err_t h3lis331dl_set_int1_config(h3lis331dl_int1_cfg_t int_cfg)
+esp_err_t h3lis331dl_set_int1_config(h3lis331dl_int1_data_t int_cfg)
 {
     uint8_t reg_value;
     esp_err_t ret = h3lis331dl_read_reg(H3LIS331DL_CTRL_REG3, &reg_value, 1);
@@ -415,6 +491,9 @@ esp_err_t h3lis331dl_set_scale(h3lis331dl_scale_t scale)
         reg_value &= ~0x30;  // Clear bits 4-5
         reg_value |= (uint8_t)scale;
         ret = h3lis331dl_write_reg(H3LIS331DL_CTRL_REG4, reg_value);
+        if (ret == ESP_OK) {
+            current_scale = scale;  // Update static variable
+        }
     }
     return ret;
 }
@@ -459,6 +538,9 @@ esp_err_t h3lis331dl_set_endian(h3lis331dl_endian_t endian)
         reg_value &= ~0x40;  // Clear bit 6
         reg_value |= (uint8_t)endian;
         ret = h3lis331dl_write_reg(H3LIS331DL_CTRL_REG4, reg_value);
+        if (ret == ESP_OK) {
+            current_endian = endian;  // Update static variable
+        }
     }
     return ret;
 }
@@ -535,4 +617,178 @@ esp_err_t h3lis331dl_set_reference(uint8_t reference)
 esp_err_t h3lis331dl_get_reference(uint8_t *reference)
 {
     return h3lis331dl_read_reg(H3LIS331DL_REFERENCE, reference, 1);
+}
+
+esp_err_t h3lis331dl_get_status(h3lis331dl_status_t *status)
+{
+    uint8_t reg_value;
+    esp_err_t ret = h3lis331dl_read_reg(H3LIS331DL_STATUS_REG, &reg_value, 1);
+    if (ret == ESP_OK) {
+        // Parse individual bits into the status structure
+        status->x_data_available = (reg_value & 0x01) != 0;    // Bit 0
+        status->y_data_available = (reg_value & 0x02) != 0;    // Bit 1
+        status->z_data_available = (reg_value & 0x04) != 0;    // Bit 2
+        status->xyz_data_available = (reg_value & 0x08) != 0;  // Bit 3
+        status->x_overrun = (reg_value & 0x10) != 0;          // Bit 4
+        status->y_overrun = (reg_value & 0x20) != 0;          // Bit 5
+        status->z_overrun = (reg_value & 0x40) != 0;          // Bit 6
+        status->xyz_overrun = (reg_value & 0x80) != 0;        // Bit 7
+    }
+    return ret;
+}
+
+esp_err_t h3lis331dl_read_accel(double *x_accel, double *y_accel, double *z_accel) {
+    uint8_t data[6];
+    int16_t raw_values[3];
+
+    // Read all acceleration registers in one transaction (auto-increment)
+    esp_err_t ret = h3lis331dl_read_reg(H3LIS331DL_OUT_X_L | 0x80, data, 6);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+
+    // Combine bytes according to endianness
+    if (current_endian == H3LIS331DL_BIG_ENDIAN) {
+        raw_values[0] = (int16_t)((data[1] << 8) | data[0]);  // X-axis
+        raw_values[1] = (int16_t)((data[3] << 8) | data[2]);  // Y-axis
+        raw_values[2] = (int16_t)((data[5] << 8) | data[4]);  // Z-axis
+    } else {
+        raw_values[0] = (int16_t)((data[0] << 8) | data[1]);  // X-axis
+        raw_values[1] = (int16_t)((data[2] << 8) | data[3]);  // Y-axis
+        raw_values[2] = (int16_t)((data[4] << 8) | data[5]);  // Z-axis
+    }
+
+    // Convert raw values to g's
+    *x_accel = convert_raw_to_g(raw_values[0], false);
+    *y_accel = convert_raw_to_g(raw_values[1], false);
+    *z_accel = convert_raw_to_g(raw_values[2], false);
+
+    return ESP_OK;
+}
+
+esp_err_t h3lis331dl_get_int1_cfg(h3lis331dl_int1_config_t *config)
+{
+    uint8_t reg_value;
+    esp_err_t ret = h3lis331dl_read_reg(H3LIS331DL_INT1_CFG, &reg_value, 1);
+    
+    if (ret == ESP_OK) {
+        config->x_low_enable = (reg_value & 0x01) != 0;    // XLIE
+        config->x_high_enable = (reg_value & 0x02) != 0;   // XHIE
+        config->y_low_enable = (reg_value & 0x04) != 0;    // YLIE
+        config->y_high_enable = (reg_value & 0x08) != 0;   // YHIE
+        config->z_low_enable = (reg_value & 0x10) != 0;    // ZLIE
+        config->z_high_enable = (reg_value & 0x20) != 0;   // ZHIE
+        config->interrupt_mode = (h3lis331dl_int_mode_t)(reg_value & 0x80); // AOI
+    }
+
+    return ret;
+}
+
+esp_err_t h3lis331dl_set_int1_cfg(uint8_t enables_mask, bool and_mode)
+{
+    uint8_t reg_value = enables_mask & 0x3F;  // Mask to ensure only bits 0-5 are used
+    if (and_mode) {
+        reg_value |= 0x80;  // Set AOI bit for AND mode
+    }
+    return h3lis331dl_write_reg(H3LIS331DL_INT1_CFG, reg_value);
+}
+
+esp_err_t h3lis331dl_set_int1_simple(h3lis331dl_axis_t axis, h3lis331dl_int_event_t event_type, bool enable)
+{
+    if (axis > H3LIS331DL_AXIS_Z) {  // Validate axis parameter
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    uint8_t current_value;
+    esp_err_t ret = h3lis331dl_read_reg(H3LIS331DL_INT1_CFG, &current_value, 1);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+
+    // Calculate bit position (0,1 for X, 2,3 for Y, 4,5 for Z)
+    uint8_t bit_pos = ((uint8_t)axis * 2) + (uint8_t)event_type;
+    uint8_t bit_mask = 1 << bit_pos;
+
+    if (enable) {
+        current_value |= bit_mask;   // Set bit
+    } else {
+        current_value &= ~bit_mask;  // Clear bit
+    }
+
+    // Preserve AOI bit (bit 7)
+    return h3lis331dl_write_reg(H3LIS331DL_INT1_CFG, current_value);
+}
+
+esp_err_t h3lis331dl_get_int1_src(h3lis331dl_int1_src_t *src)
+{
+    uint8_t reg_value;
+    esp_err_t ret = h3lis331dl_read_reg(H3LIS331DL_INT1_SRC, &reg_value, 1);
+    
+    if (ret == ESP_OK) {
+        src->x_low = (reg_value & 0x01) != 0;           // Bit 0
+        src->x_high = (reg_value & 0x02) != 0;          // Bit 1
+        src->y_low = (reg_value & 0x04) != 0;           // Bit 2
+        src->y_high = (reg_value & 0x08) != 0;          // Bit 3
+        src->z_low = (reg_value & 0x10) != 0;           // Bit 4
+        src->z_high = (reg_value & 0x20) != 0;          // Bit 5
+        src->interrupt_active = (reg_value & 0x40) != 0; // Bit 6
+        // Bit 7 is reserved
+    }
+    
+    return ret;
+}
+
+esp_err_t h3lis331dl_set_int1_threshold(double threshold_g) {
+    // Check if threshold exceeds current scale
+    double max_g;
+    switch (current_scale) {
+        case H3LIS331DL_SCALE_100G:
+            max_g = 100.0;
+            break;
+        case H3LIS331DL_SCALE_200G:
+            max_g = 200.0;
+            break;
+        case H3LIS331DL_SCALE_400G:
+            max_g = 400.0;
+            break;
+        default:
+            max_g = 100.0;
+            break;
+    }
+    
+    if (fabs(threshold_g) > max_g) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    uint8_t threshold = convert_g_to_raw(threshold_g, true);
+    return h3lis331dl_write_reg(H3LIS331DL_INT1_THS, threshold);
+}
+
+esp_err_t h3lis331dl_get_int1_threshold(double *threshold_g) {
+    uint8_t threshold;
+    esp_err_t ret = h3lis331dl_read_reg(H3LIS331DL_INT1_THS, &threshold, 1);
+    if (ret == ESP_OK) {
+        *threshold_g = convert_threshold_to_g(threshold);
+    }
+    return ret;
+}
+
+esp_err_t h3lis331dl_set_int1_duration(uint8_t duration) {
+    // Check if the duration is within valid limits based on ODR
+    // Assuming ODR is set to 50Hz, the maximum duration can be calculated
+    // For example, if ODR is 50Hz, the duration can be set from 0 to 127
+    // (0-127 corresponds to 0 to 127 * 20ms = 0 to 2.54 seconds)
+    
+    // Here, we can define the maximum duration based on the ODR
+    // For simplicity, let's assume the maximum is 127 for now
+    // You can adjust this based on your ODR settings
+    if (duration > 127) {
+        return ESP_ERR_INVALID_ARG; // Invalid duration
+    }
+
+    return h3lis331dl_write_reg(H3LIS331DL_INT1_DURATION, duration);
+}
+
+esp_err_t h3lis331dl_get_int1_duration(uint8_t *duration) {
+    return h3lis331dl_read_reg(H3LIS331DL_INT1_DURATION, duration, 1);
 }

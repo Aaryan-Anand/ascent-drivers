@@ -12,9 +12,19 @@
 #define H3LIS331DL_CTRL_REG3          0x22
 #define H3LIS331DL_CTRL_REG4          0x23
 #define H3LIS331DL_OUT_X_L            0x28
+#define H3LIS331DL_OUT_X_H            0x29
+#define H3LIS331DL_OUT_Y_L            0x2A
+#define H3LIS331DL_OUT_Y_H            0x2B
+#define H3LIS331DL_OUT_Z_L            0x2C
+#define H3LIS331DL_OUT_Z_H            0x2D
 #define H3LIS331DL_CTRL_REG5          0x24
 #define H3LIS331DL_HP_FILTER_RESET    0x25
 #define H3LIS331DL_REFERENCE          0x26
+#define H3LIS331DL_STATUS_REG        0x27
+#define H3LIS331DL_INT1_CFG          0x30    // Interrupt 1 configuration register
+#define H3LIS331DL_INT1_SRC          0x31    // Interrupt 1 source register
+#define H3LIS331DL_INT1_THS          0x32    // Interrupt 1 threshold register
+#define H3LIS331DL_INT1_DURATION      0x33    // Interrupt 1 duration register
 
 // Axes enable configuration (bits 0-2)
 typedef enum {
@@ -78,11 +88,11 @@ typedef enum {
 
 // Data signal on INT1 control (bits 0-1)
 typedef enum {
-    H3LIS331DL_INT1_SRC = 0x00,         // INT1 source
-    H3LIS331DL_INT1_OR_INT2_SRC = 0x01, // INT1 or INT2 source
-    H3LIS331DL_INT1_DRDY = 0x02,        // Data ready
-    H3LIS331DL_INT1_BOOT = 0x03         // Boot running
-} h3lis331dl_int1_cfg_t;
+    H3LIS331DL_INT1_DATA_SRC = 0x00,         // INT1 source
+    H3LIS331DL_INT1_OR_INT2_SRC = 0x01,      // INT1 or INT2 source
+    H3LIS331DL_INT1_DRDY = 0x02,             // Data ready
+    H3LIS331DL_INT1_BOOT = 0x03              // Boot running
+} h3lis331dl_int1_data_t;
 
 // Data signal on INT2 control (bits 3-4)
 typedef enum {
@@ -135,6 +145,60 @@ typedef enum {
     H3LIS331DL_SLEEP_TO_WAKE_LOW_POWER = 0x03  // Sleep-to-wake enabled in low power mode
 } h3lis331dl_sleep_to_wake_t;
 
+// Status register bit masks
+typedef struct {
+    bool x_data_available : 1;      // XDA: X-axis new data available
+    bool y_data_available : 1;      // YDA: Y-axis new data available
+    bool z_data_available : 1;      // ZDA: Z-axis new data available
+    bool xyz_data_available : 1;    // ZYXDA: X, Y, Z-axis new data available
+    bool x_overrun : 1;             // XOR: X-axis data overrun
+    bool y_overrun : 1;             // YOR: Y-axis data overrun
+    bool z_overrun : 1;             // ZOR: Z-axis data overrun
+    bool xyz_overrun : 1;           // ZYXOR: X, Y, Z-axis data overrun
+} h3lis331dl_status_t;
+
+// Interrupt combination mode
+typedef enum {
+    H3LIS331DL_INT_OR = 0x00,    // OR combination of interrupt events
+    H3LIS331DL_INT_AND = 0x80    // AND combination of interrupt events
+} h3lis331dl_int_mode_t;
+
+// Structure to configure INT1 settings
+typedef struct {
+    bool x_low_enable : 1;      // XLIE: X low event interrupt enable
+    bool x_high_enable : 1;     // XHIE: X high event interrupt enable
+    bool y_low_enable : 1;      // YLIE: Y low event interrupt enable
+    bool y_high_enable : 1;     // YHIE: Y high event interrupt enable
+    bool z_low_enable : 1;      // ZLIE: Z low event interrupt enable
+    bool z_high_enable : 1;     // ZHIE: Z high event interrupt enable
+    h3lis331dl_int_mode_t interrupt_mode;  // AOI: AND/OR combination mode
+} h3lis331dl_int1_config_t;
+
+// Enum for axis selection
+typedef enum {
+    H3LIS331DL_AXIS_X = 0,
+    H3LIS331DL_AXIS_Y = 1,
+    H3LIS331DL_AXIS_Z = 2
+} h3lis331dl_axis_t;
+
+// Enum for interrupt event type
+typedef enum {
+    H3LIS331DL_INT_LOW = 0,    // Low event interrupt
+    H3LIS331DL_INT_HIGH = 1    // High event interrupt
+} h3lis331dl_int_event_t;
+
+// Structure for INT1_SRC register
+typedef struct {
+    bool x_low : 1;           // XL: X low event
+    bool x_high : 1;          // XH: X high event
+    bool y_low : 1;           // YL: Y low event
+    bool y_high : 1;          // YH: Y high event
+    bool z_low : 1;           // ZL: Z low event
+    bool z_high : 1;          // ZH: Z high event
+    bool interrupt_active : 1; // IA: One or more interrupts have been generated
+    uint8_t reserved : 1;     // Reserved bit
+} h3lis331dl_int1_src_t;
+
 /**
  * @brief Initialize the H3LIS331DL sensor
  * 
@@ -146,12 +210,12 @@ esp_err_t h3lis331dl_init(i2c_port_t port);
 /**
  * @brief Read accelerometer data
  * 
- * @param x_accel Pointer to store X-axis acceleration
- * @param y_accel Pointer to store Y-axis acceleration
- * @param z_accel Pointer to store Z-axis acceleration
+ * @param[out] x_accel Pointer to store X-axis acceleration in g's
+ * @param[out] y_accel Pointer to store Y-axis acceleration in g's
+ * @param[out] z_accel Pointer to store Z-axis acceleration in g's
  * @return esp_err_t ESP_OK on success
  */
-esp_err_t h3lis331dl_read_accel(float *x_accel, float *y_accel, float *z_accel);
+esp_err_t h3lis331dl_read_accel(double *x_accel, double *y_accel, double *z_accel);
 
 /**
  * @brief Read the chip ID from the WHO_AM_I register
@@ -187,8 +251,8 @@ esp_err_t h3lis331dl_set_hp_mode(h3lis331dl_hpm_t hp_mode);
 esp_err_t h3lis331dl_reboot_memory(void);
 
 // Function declarations for CTRL_REG3 settings
-esp_err_t h3lis331dl_get_int1_config(h3lis331dl_int1_cfg_t *int_cfg);
-esp_err_t h3lis331dl_set_int1_config(h3lis331dl_int1_cfg_t int_cfg);
+esp_err_t h3lis331dl_get_int1_config(h3lis331dl_int1_data_t *int_cfg);
+esp_err_t h3lis331dl_set_int1_config(h3lis331dl_int1_data_t int_cfg);
 
 esp_err_t h3lis331dl_get_int2_config(h3lis331dl_int2_cfg_t *int_cfg);
 esp_err_t h3lis331dl_set_int2_config(h3lis331dl_int2_cfg_t int_cfg);
@@ -252,5 +316,98 @@ esp_err_t h3lis331dl_set_reference(uint8_t reference);
  * @return esp_err_t ESP_OK on success
  */
 esp_err_t h3lis331dl_get_reference(uint8_t *reference);
+
+// Function declaration for reading status
+esp_err_t h3lis331dl_get_status(h3lis331dl_status_t *status);
+
+
+/**
+ * @brief Read current INT1 interrupt settings
+ * 
+ * @param config Pointer to store the current configuration
+ * @return esp_err_t ESP_OK on success
+ */
+esp_err_t h3lis331dl_get_int1_cfg(h3lis331dl_int1_config_t *config);
+
+/**
+ * @brief Configure INT1 interrupt settings using a single value for XYZ enables
+ * 
+ * @param enables_mask Bit mask for enables (bits 0-5: XLIE,XHIE,YLIE,YHIE,ZLIE,ZHIE)
+ * @param and_mode If true, use AND combination (AOI=1), if false use OR combination (AOI=0)
+ * @return esp_err_t ESP_OK on success
+ */
+esp_err_t h3lis331dl_set_int1_cfg(uint8_t enables_mask, bool and_mode);
+
+/**
+ * @brief Configure a single interrupt enable for INT1
+ * 
+ * @param axis Which axis (X, Y, or Z)
+ * @param event_type Type of event (low or high)
+ * @param enable Enable or disable the specified interrupt
+ * @return esp_err_t ESP_OK on success
+ */
+esp_err_t h3lis331dl_set_int1_simple(h3lis331dl_axis_t axis, h3lis331dl_int_event_t event_type, bool enable);
+
+/**
+ * @brief Read INT1 source register
+ * 
+ * Note: Reading this register clears the interrupt signal and 
+ * refreshes the data if latch is enabled
+ * 
+ * @param[out] src Pointer to store the interrupt source data
+ * @return esp_err_t ESP_OK on success
+ */
+esp_err_t h3lis331dl_get_int1_src(h3lis331dl_int1_src_t *src);
+
+/**
+ * @brief Set interrupt 1 threshold
+ * 
+ * @param threshold_g Threshold in g's (will be converted based on current scale)
+ *                   Max values: ±100g, ±200g, or ±400g depending on scale
+ * @return esp_err_t ESP_OK on success, ESP_ERR_INVALID_ARG if threshold exceeds scale
+ */
+esp_err_t h3lis331dl_set_int1_threshold(double threshold_g);
+
+/**
+ * @brief Get current interrupt 1 threshold
+ * 
+ * @param[out] threshold_g Pointer to store threshold value in g's
+ * @return esp_err_t ESP_OK on success
+ */
+esp_err_t h3lis331dl_get_int1_threshold(double *threshold_g);
+
+/**
+ * @brief Convert g's to the appropriate register value (threshold) based on current scale
+ * 
+ * @param g_value Value in g's to convert
+ * @param is_threshold If true, convert to threshold (7-bit), otherwise convert to raw (16-bit)
+ * @return uint8_t Converted value
+ */
+uint8_t convert_g_to_raw(double g_value, bool is_threshold);
+
+/**
+ * @brief Convert raw acceleration value to g's based on scale
+ * 
+ * @param raw_value Raw acceleration value
+ * @param is_threshold If true, treat the value as a threshold
+ * @return double Converted value in g's
+ */
+double convert_raw_to_g(int16_t raw_value, bool is_threshold);
+
+/**
+ * @brief Set interrupt 1 duration
+ * 
+ * @param duration Duration value (0-127) based on ODR
+ * @return esp_err_t ESP_OK on success, ESP_ERR_INVALID_ARG if duration exceeds max
+ */
+esp_err_t h3lis331dl_set_int1_duration(uint8_t duration);
+
+/**
+ * @brief Get current interrupt 1 duration
+ * 
+ * @param[out] duration Pointer to store the current duration value
+ * @return esp_err_t ESP_OK on success
+ */
+esp_err_t h3lis331dl_get_int1_duration(uint8_t *duration);
 
 #endif /* DRIVER_H3LIS331DL_H */ 
