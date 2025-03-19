@@ -1,5 +1,5 @@
-#ifndef PYRO_H
-#define PYRO_H
+#ifndef DRIVER_PYRO_H
+#define DRIVER_PYRO_H
 
 #include <stdbool.h>
 #include "driver/gpio.h"

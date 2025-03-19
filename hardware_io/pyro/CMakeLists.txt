@@ -1,6 +1,6 @@
 idf_component_register(
     SRCS 
-        "src/driver_pyro.c"
+        "src/pyro.c"
         "examples/pyro_test.c"
     INCLUDE_DIRS 
         "src"
