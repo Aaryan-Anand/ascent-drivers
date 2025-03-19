@@ -4,7 +4,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "driver_SAM_M10Q.h"
+#include "driver_sam_m10q.h"
 
 #define UBLOX_I2C_ADDRESS 0x42     /*!< Slave address of the UBlox device */
 #define I2C_MASTER_TX_BUF_DISABLE 0 /*!< I2C master doesn't need buffer */
