@@ -6,5 +6,5 @@ idf_component_register(
         "src"
         "examples"
         "${CMAKE_CURRENT_SOURCE_DIR}/../../"
-    REQUIRES driver
+    REQUIRES driver adc
 ) 

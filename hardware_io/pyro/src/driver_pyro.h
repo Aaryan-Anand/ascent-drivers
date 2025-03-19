@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include "driver/gpio.h"
-#include "esp_adc/adc_oneshot.h"
+#include "adc_oneshot.h"
 #include "esp_err.h"
 
 // Pyro channel enumeration
