@@ -30,13 +30,13 @@ static esp_err_t pyroValidate(void) {
         bool cont = pyro_continuity(channel);
         printf("  - Continuity: %s\n", cont ? "DETECTED" : "NONE");
 
-        // Check resistance if continuity exists
+        // Check voltage/resistance if continuity exists
         if (cont) {
-            float resistance = pyro_resistance(channel);
-            if (resistance >= 0) {
-                printf("  - Resistance: %.2f ohms\n", resistance);
+            double voltage = pyro_resistance(channel);
+            if (voltage >= 0) {
+                printf("  - Voltage: %.3f V\n", voltage);
             } else {
-                printf("  - Resistance: ERROR\n");
+                printf("  - Voltage: ERROR\n");
                 ret = ESP_FAIL;
             }
         }

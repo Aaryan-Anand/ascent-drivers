@@ -1,4 +1,4 @@
-#include "pyro.h"
+#include "driver_pyro.h"
 #include "ascent_r2_hardware_definition.h"
 #include "driver/adc.h"
 #include "esp_log.h"
@@ -12,6 +12,14 @@ static const gpio_num_t pyro_out_pins[] = {
 
 static const gpio_num_t pyro_cont_pins[] = {
     PYRO1_CONT, PYRO2_CONT, PYRO3_CONT, PYRO4_CONT
+};
+
+// Update the ADC channel mappings to match the actual GPIO pins
+static const adc1_channel_t pyro_adc_channels[] = {
+    ADC1_CHANNEL_0,  // For PYRO1_CONT (GPIO 1)
+    ADC1_CHANNEL_1,  // For PYRO2_CONT (GPIO 2)
+    ADC1_CHANNEL_2,  // For PYRO3_CONT (GPIO 3)
+    ADC1_CHANNEL_3   // For PYRO4_CONT (GPIO 4)
 };
 
 esp_err_t pyro_init(void) {
@@ -40,6 +48,14 @@ esp_err_t pyro_init(void) {
         ESP_ERROR_CHECK(gpio_config(&io_conf));
     }
 
+    // Configure ADC
+    adc1_config_width(ADC_WIDTH_BIT_12);
+    
+    // Configure ADC channels
+    for (int i = 0; i < 4; i++) {
+        adc1_config_channel_atten(pyro_adc_channels[i], ADC_ATTEN_DB_11);
+    }
+
     return ESP_OK;
 }
 
@@ -51,20 +67,30 @@ bool pyro_continuity(pyro_channel_t channel) {
     return gpio_get_level(pyro_cont_pins[channel - 1]);
 }
 
-float pyro_resistance(pyro_channel_t channel) {
+double pyro_resistance(pyro_channel_t channel) {
     if (channel < 1 || channel > 4) {
-        return -1.0f;
+        return -1.0;
     }
 
-    // Note: This is a placeholder implementation
-    // You'll need to implement the actual ADC reading and resistance calculation
-    // based on your hardware configuration
-    uint32_t adc_reading = 0; // Replace with actual ADC reading
-    float voltage = adc_reading * (3.3f / 4095.0f); // Assuming 3.3V reference and 12-bit ADC
-    float current = 0.001f; // Replace with your actual current source value
-    float resistance = voltage / current;
+    // Read ADC value
+    int adc_reading = adc1_get_raw(pyro_adc_channels[channel - 1]);
+    if (adc_reading < 0) {
+        ESP_LOGE(TAG, "ADC read error on channel %d", channel);
+        return -1.0;
+    }
 
-    return resistance;
+    // Convert ADC reading to voltage (3.3V reference, 12-bit ADC = 4095 max value)
+    double measured_voltage = (double)adc_reading * (3.3 / 4095.0);
+    
+    // Scale voltage based on voltage divider (multiply by 3.4)
+    double actual_voltage = measured_voltage * 3.4;
+
+    ESP_LOGI(TAG, "Channel %d - ADC: %d, Measured V: %.3f, Actual V: %.3f", 
+             channel, adc_reading, measured_voltage, actual_voltage);
+
+    // For now, just return the actual voltage
+    // We'll implement resistance calculation in the next step
+    return actual_voltage;
 }
 
 esp_err_t pyro_activate(pyro_channel_t channel) {

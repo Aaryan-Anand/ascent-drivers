@@ -16,7 +16,7 @@ typedef enum {
 // Function prototypes
 esp_err_t pyro_init(void);
 bool pyro_continuity(pyro_channel_t channel);
-float pyro_resistance(pyro_channel_t channel);
+double pyro_resistance(pyro_channel_t channel);
 esp_err_t pyro_activate(pyro_channel_t channel);
 
-#endif /* PYRO_H */
+#endif /* DRIVER_PYRO_H */
