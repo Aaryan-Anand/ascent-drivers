@@ -5,5 +5,6 @@ idf_component_register(
     INCLUDE_DIRS 
         "src"
         "examples"
+        "${CMAKE_CURRENT_SOURCE_DIR}/.."
     REQUIRES driver i2c
 ) 
