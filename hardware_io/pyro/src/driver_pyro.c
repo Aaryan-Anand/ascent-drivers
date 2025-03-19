@@ -1,9 +1,10 @@
 #include "driver_pyro.h"
 #include "ascent_r2_hardware_definition.h"
-#include "driver/adc.h"
+#include "esp_adc/adc_oneshot.h"
 #include "esp_log.h"
 
 static const char *TAG = "PYRO";
+static adc_oneshot_unit_handle_t adc1_handle;
 
 // Arrays to map channel numbers to GPIO pins
 static const gpio_num_t pyro_out_pins[] = {
@@ -12,14 +13,6 @@ static const gpio_num_t pyro_out_pins[] = {
 
 static const gpio_num_t pyro_cont_pins[] = {
     PYRO1_CONT, PYRO2_CONT, PYRO3_CONT, PYRO4_CONT
-};
-
-// Update the ADC channel mappings to match the actual GPIO pins
-static const adc1_channel_t pyro_adc_channels[] = {
-    ADC1_CHANNEL_0,  // For PYRO1_CONT (GPIO 1)
-    ADC1_CHANNEL_1,  // For PYRO2_CONT (GPIO 2)
-    ADC1_CHANNEL_2,  // For PYRO3_CONT (GPIO 3)
-    ADC1_CHANNEL_3   // For PYRO4_CONT (GPIO 4)
 };
 
 esp_err_t pyro_init(void) {
@@ -36,7 +29,7 @@ esp_err_t pyro_init(void) {
         gpio_set_level(pyro_out_pins[i], 0);
     }
 
-    // Configure continuity pins
+    // Configure continuity pins as regular GPIO inputs
     for (int i = 0; i < 4; i++) {
         gpio_config_t io_conf = {
             .pin_bit_mask = (1ULL << pyro_cont_pins[i]),
@@ -48,13 +41,12 @@ esp_err_t pyro_init(void) {
         ESP_ERROR_CHECK(gpio_config(&io_conf));
     }
 
-    // Configure ADC
-    adc1_config_width(ADC_WIDTH_BIT_12);
-    
-    // Configure ADC channels
-    for (int i = 0; i < 4; i++) {
-        adc1_config_channel_atten(pyro_adc_channels[i], ADC_ATTEN_DB_11);
-    }
+    // Initialize ADC
+    adc_oneshot_unit_init_cfg_t adc_config = {
+        .unit_id = ADC_UNIT_1,
+        .ulp_mode = ADC_ULP_MODE_DISABLE,
+    };
+    ESP_ERROR_CHECK(adc_oneshot_new_unit(&adc_config, &adc1_handle));
 
     return ESP_OK;
 }
@@ -72,9 +64,17 @@ double pyro_resistance(pyro_channel_t channel) {
         return -1.0;
     }
 
-    // Read ADC value
-    int adc_reading = adc1_get_raw(pyro_adc_channels[channel - 1]);
-    if (adc_reading < 0) {
+    // Configure ADC channel for this reading
+    adc_oneshot_chan_cfg_t channel_config = {
+        .atten = ADC_ATTEN_DB_11,
+        .bitwidth = ADC_BITWIDTH_DEFAULT,
+    };
+    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_1, &channel_config));
+
+    // Read ADC
+    int adc_reading;
+    esp_err_t ret = adc_oneshot_read(adc1_handle, ADC_CHANNEL_1, &adc_reading);
+    if (ret != ESP_OK) {
         ESP_LOGE(TAG, "ADC read error on channel %d", channel);
         return -1.0;
     }
@@ -88,8 +88,6 @@ double pyro_resistance(pyro_channel_t channel) {
     ESP_LOGI(TAG, "Channel %d - ADC: %d, Measured V: %.3f, Actual V: %.3f", 
              channel, adc_reading, measured_voltage, actual_voltage);
 
-    // For now, just return the actual voltage
-    // We'll implement resistance calculation in the next step
     return actual_voltage;
 }
 
