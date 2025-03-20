@@ -34,9 +34,9 @@ static esp_err_t pyroValidate(void) {
         if (cont) {
             double voltage = pyro_resistance(channel);
             if (voltage >= 0) {
-                printf("  - Voltage: %.3f V\n", voltage);
+                printf("  - Resistance: %.3f Ohm\n", voltage);
             } else {
-                printf("  - Voltage: ERROR\n");
+                printf("  - Resistance: ERROR\n");
                 ret = ESP_FAIL;
             }
         }

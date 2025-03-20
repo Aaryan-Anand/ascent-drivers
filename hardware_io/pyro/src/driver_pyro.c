@@ -4,6 +4,7 @@
 #include "esp_log.h"
 #include "adc_cali.h"
 #include "adc_cali_scheme.h"
+#include "driver_psu.h"
 
 static const char *TAG = "PYRO";
 static adc_oneshot_unit_handle_t adc1_handle;
@@ -102,6 +103,13 @@ double pyro_resistance(pyro_channel_t channel) {
         return -1.0;
     }
 
+    // Check power source
+    power_status_t power_status = psu_get_power_source();
+    if (power_status.source != POWER_SOURCE_BOTH && power_status.source != POWER_SOURCE_BATTERY_ONLY) {
+        ESP_LOGE(TAG, "Resistance can't be measured accurately with current power source.");
+        return -1.0;
+    }
+
     // Get the corresponding ADC channel from the enum
     adc_channel_t adc_chan;
     switch (channel) {
@@ -144,10 +152,16 @@ double pyro_resistance(pyro_channel_t channel) {
     // Scale voltage based on voltage divider (multiply by 3.778)
     double actual_voltage = measured_voltage * DIVIDER_RATIO;
 
-    ESP_LOGI(TAG, "Channel %d - ADC Raw: %d, Calibrated: %dmV, Actual: %.3fV", 
-             channel, adc_raw, voltage_mv, actual_voltage);
+    // Calculate resistance
+    double source_voltage = psu_read_battery_voltage();
+    double effective_voltage = source_voltage - DIODE_DROP;
+    double rematch = PYRO_RESISTANCE_COEFFICIENT * ((effective_voltage / actual_voltage) - DIVIDER_RATIO);
 
-    return actual_voltage;
+    if (rematch < 0) rematch = 0;
+
+    ESP_LOGI(TAG, "Channel %d - Resistance: %.3f Ohms", channel, rematch);
+
+    return rematch;
 }
 
 esp_err_t pyro_activate(pyro_channel_t channel) {
