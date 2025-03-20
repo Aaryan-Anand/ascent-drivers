@@ -2,9 +2,12 @@
 #include "ascent_r2_hardware_definition.h"
 #include "adc_oneshot.h"
 #include "esp_log.h"
+#include "adc_cali.h"
+#include "adc_cali_scheme.h"
 
 static const char *TAG = "PYRO";
 static adc_oneshot_unit_handle_t adc1_handle;
+static adc_cali_handle_t adc_cali_handle[4];  // One calibration handle per channel
 
 // Array to map channel numbers to GPIO pins
 static const gpio_num_t pyro_out_pins[] = {
@@ -31,6 +34,17 @@ esp_err_t pyro_init(void) {
         .ulp_mode = ADC_ULP_MODE_DISABLE,
     };
     ESP_ERROR_CHECK(adc_oneshot_new_unit(&adc_config, &adc1_handle));
+
+    // Initialize calibration for each channel
+    for (int i = 0; i < 4; i++) {
+        adc_cali_curve_fitting_config_t cali_config = {
+            .unit_id = ADC_UNIT_1,
+            .chan = i,  // ADC_CHANNEL_0 through ADC_CHANNEL_3
+            .atten = ADC_ATTEN_DB_12,
+            .bitwidth = ADC_BITWIDTH_DEFAULT
+        };
+        ESP_ERROR_CHECK(adc_cali_create_scheme_curve_fitting(&cali_config, &adc_cali_handle[i]));
+    }
 
     return ESP_OK;
 }
@@ -67,15 +81,17 @@ bool pyro_continuity(pyro_channel_t channel) {
     ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, adc_chan, &channel_config));
 
     // Read ADC
-    int adc_reading;
-    esp_err_t ret = adc_oneshot_read(adc1_handle, adc_chan, &adc_reading);
+    int adc_raw;
+    int voltage_mv;
+    esp_err_t ret = adc_oneshot_read(adc1_handle, adc_chan, &adc_raw);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "ADC read error on channel %d", channel);
         return false;
     }
 
-    // Convert ADC reading to voltage (3.3V reference, 12-bit ADC = 4095 max value)
-    double voltage = (double)adc_reading * (3.3 / 4095.0);
+    // Convert raw reading to millivolts using calibration
+    ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc_cali_handle[adc_chan], adc_raw, &voltage_mv));
+    double voltage = voltage_mv / 1000.0;
     
     // Return true if voltage is above 1V threshold
     return (voltage > 1.0);
@@ -108,27 +124,28 @@ double pyro_resistance(pyro_channel_t channel) {
     // Configure ADC channel for this reading
     adc_oneshot_chan_cfg_t channel_config = {
         .atten = ADC_ATTEN_DB_12,
-        .atten = ADC_ATTEN_DB_11,
         .bitwidth = ADC_BITWIDTH_DEFAULT,
     };
     ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, adc_chan, &channel_config));
 
     // Read ADC
-    int adc_reading;
-    esp_err_t ret = adc_oneshot_read(adc1_handle, adc_chan, &adc_reading);
+    int adc_raw;
+    int voltage_mv;
+    esp_err_t ret = adc_oneshot_read(adc1_handle, adc_chan, &adc_raw);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "ADC read error on channel %d", channel);
         return -1.0;
     }
 
-    // Convert ADC reading to voltage (3.3V reference, 12-bit ADC = 4095 max value)
-    double measured_voltage = (double)adc_reading * (3.3 / 4095.0);
+    // Convert raw reading to millivolts using calibration
+    ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc_cali_handle[adc_chan], adc_raw, &voltage_mv));
+    double measured_voltage = voltage_mv / 1000.0;
     
-    // Scale voltage based on voltage divider (multiply by 3.4)
-    double actual_voltage = measured_voltage * 3.4;
+    // Scale voltage based on voltage divider (multiply by 3.778)
+    double actual_voltage = measured_voltage * 3.778;
 
-    ESP_LOGI(TAG, "Channel %d - ADC: %d, Measured V: %.3f, Actual V: %.3f", 
-             channel, adc_reading, measured_voltage, actual_voltage);
+    ESP_LOGI(TAG, "Channel %d - ADC Raw: %d, Calibrated: %dmV, Actual: %.3fV", 
+             channel, adc_raw, voltage_mv, actual_voltage);
 
     return actual_voltage;
 }
@@ -154,4 +171,12 @@ esp_err_t pyro_activate(pyro_channel_t channel) {
     gpio_set_level(pyro_out_pins[channel - 1], 0);
 
     return ESP_OK;
+}
+
+void pyro_deinit(void) {
+    // Clean up calibration handles
+    for (int i = 0; i < 4; i++) {
+        adc_cali_delete_scheme_curve_fitting(adc_cali_handle[i]);
+    }
+    adc_oneshot_del_unit(adc1_handle);
 }

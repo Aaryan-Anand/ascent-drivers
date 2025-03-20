@@ -19,5 +19,6 @@ esp_err_t pyro_init(void);
 bool pyro_continuity(pyro_channel_t channel);
 double pyro_resistance(pyro_channel_t channel);
 esp_err_t pyro_activate(pyro_channel_t channel);
+void pyro_deinit(void);
 
 #endif /* DRIVER_PYRO_H */
