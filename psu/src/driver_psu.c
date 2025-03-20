@@ -80,7 +80,7 @@ double psu_read_battery_voltage(void) {
     
     // Convert from mV to V and apply voltage divider scaling
     double measured_voltage = voltage_mv / 1000.0;
-    double actual_voltage = measured_voltage * 3.778;
+    double actual_voltage = measured_voltage * DIVIDER_RATIO;
 
     ESP_LOGI(TAG, "Battery ADC Raw: %d, Calibrated: %dmV, Actual: %.3fV", 
              adc_raw, voltage_mv, actual_voltage);
@@ -230,7 +230,7 @@ psu_mode_t psu_get_mode(void) {
         return PSU_MODE_ERROR;
     }
 
-    const double TARGET_VOLTAGE = 3.778;
+    const double TARGET_VOLTAGE = DIVIDER_RATIO;
     const double TOLERANCE = 0.1;
 
     if (voltage > TARGET_VOLTAGE + TOLERANCE) {

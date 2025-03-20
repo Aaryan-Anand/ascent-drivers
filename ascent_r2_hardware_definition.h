@@ -61,4 +61,7 @@
 #define UART_PORT_NUM              UART_NUM_1      // UART port number
 #define UART_BAUD_RATE             115200          // UART baud rate
 
+#define DIODE_DROP 0.35f
+#define DIVIDER_RATIO 3.778f
+
 #endif /* ASCENT_R2_PINS_H */ 

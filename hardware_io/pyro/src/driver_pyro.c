@@ -142,7 +142,7 @@ double pyro_resistance(pyro_channel_t channel) {
     double measured_voltage = voltage_mv / 1000.0;
     
     // Scale voltage based on voltage divider (multiply by 3.778)
-    double actual_voltage = measured_voltage * 3.778;
+    double actual_voltage = measured_voltage * DIVIDER_RATIO;
 
     ESP_LOGI(TAG, "Channel %d - ADC Raw: %d, Calibrated: %dmV, Actual: %.3fV", 
              channel, adc_raw, voltage_mv, actual_voltage);
