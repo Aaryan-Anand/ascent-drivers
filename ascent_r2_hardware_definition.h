@@ -38,6 +38,9 @@
 #define LORA_CS                     GPIO_NUM_10     //LoRa CS
 #define LORA_DIO0                   GPIO_NUM_9      //LoRa DIO0
 
+//PSU Pins
+#define VBATT                     GPIO_NUM_17     // VBATT Enable
+
 //Pyrotechnic channel Pins
 #define PYRO1_OUT                   GPIO_NUM_34     // Pyro channel 1 (APOGEE)
 #define PYRO2_OUT                   GPIO_NUM_35     // Pyro channel 2 (MAINS)
