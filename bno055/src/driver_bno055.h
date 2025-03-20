@@ -227,6 +227,23 @@ void bno055_get_calib(uint8_t *sys, uint8_t *gyro, uint8_t *accel, uint8_t *mag)
  * @param reg_addr The address of the register to read
  * @return uint8_t The value read from the register
  */
-uint8_t readRegister(uint8_t reg_addr);
+uint8_t bnoreadRegister(uint8_t reg_addr);
+
+/**
+ * @brief Read accelerometer, magnetometer, and gyroscope data
+ * 
+ * @param acc_x Pointer to store accelerometer X data
+ * @param acc_y Pointer to store accelerometer Y data
+ * @param acc_z Pointer to store accelerometer Z data
+ * @param mag_x Pointer to store magnetometer X data
+ * @param mag_y Pointer to store magnetometer Y data
+ * @param mag_z Pointer to store magnetometer Z data
+ * @param gyr_x Pointer to store gyroscope X data
+ * @param gyr_y Pointer to store gyroscope Y data
+ * @param gyr_z Pointer to store gyroscope Z data
+ */
+void bno_readamg(int16_t *acc_x, int16_t *acc_y, int16_t *acc_z,
+                 int16_t *mag_x, int16_t *mag_y, int16_t *mag_z,
+                 int16_t *gyr_x, int16_t *gyr_y, int16_t *gyr_z);
 
 #endif /* DRIVER_BNO055_H */

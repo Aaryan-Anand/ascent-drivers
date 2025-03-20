@@ -27,31 +27,51 @@ esp_err_t bno055_init(i2c_port_t port) {
     return ESP_OK;
 }
 
-uint8_t readRegister(uint8_t reg_addr) {
+uint8_t bnoreadRegister(uint8_t reg_addr) {
     uint8_t data;
     i2c_manager_read_register(i2c_port, BNO055_I2C_ADDR, reg_addr, &data, 1);
     return data;
 }
 
-esp_err_t writeRegister(uint8_t reg_addr, uint8_t data) {
+uint8_t* bnoreadMultiple(uint8_t reg_addr, size_t length) {
+    uint8_t *data = malloc(length); // Allocate memory for the data
+    if (data != NULL) {
+        i2c_manager_read_register(i2c_port, BNO055_I2C_ADDR, reg_addr, data, length);
+    }
+    return data; // Return the pointer to the data
+}
+
+esp_err_t bnowriteRegister(uint8_t reg_addr, uint8_t data) {
     return i2c_manager_write_register(i2c_port, BNO055_I2C_ADDR, reg_addr, &data, 1);
 }
 
 uint8_t bno055_get_mode(void) {
-    uint8_t currentmode = readRegister(BNO_OPR_MODE_ADDR);
+    uint8_t currentmode = bnoreadRegister(BNO_OPR_MODE_ADDR);
     vTaskDelay(50 / portTICK_PERIOD_MS);
     return currentmode;
 }
 
 void bno055_set_mode(bno055_opmode_t mode) {
-    writeRegister(BNO_OPR_MODE_ADDR, CONFIG);
+    bnowriteRegister(BNO_OPR_MODE_ADDR, CONFIG);
     vTaskDelay(500 / portTICK_PERIOD_MS);
-    writeRegister(BNO_OPR_MODE_ADDR, mode);
-    vTaskDelay(500 / portTICK_PERIOD_MS);
+    
+    // Attempt to set the mode and verify it
+    for (int i = 0; i < 3; i++) {
+        bnowriteRegister(BNO_OPR_MODE_ADDR, mode);
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+        
+        uint8_t current_mode = bno055_get_mode();
+        if (current_mode == mode) {
+            ESP_LOGI(TAG, "Mode set successfully to %d", mode);
+            return; // Exit if the mode is set correctly
+        }
+    }
+    
+    ESP_LOGE(TAG, "Failed to set mode to %d after 3 attempts", mode);
 }
 
 void bno055_get_calib(uint8_t *sys, uint8_t *gyro, uint8_t *accel, uint8_t *mag) {
-    uint8_t calData = readRegister(BNO_CALIB_STAT_ADDR);
+    uint8_t calData = bnoreadRegister(BNO_CALIB_STAT_ADDR);
     if (sys != NULL) {
         *sys = (calData >> 6) & 0x03;
     }
@@ -65,6 +85,31 @@ void bno055_get_calib(uint8_t *sys, uint8_t *gyro, uint8_t *accel, uint8_t *mag)
         *mag = calData & 0x03;
     }
 }
+
+void bno_readamg(int16_t *acc_x, int16_t *acc_y, int16_t *acc_z,
+                 int16_t *mag_x, int16_t *mag_y, int16_t *mag_z,
+                 int16_t *gyr_x, int16_t *gyr_y, int16_t *gyr_z) {
+    uint8_t *data = bnoreadMultiple(0x08, 18); // Read 18 registers from 0x08 to 0x19
+    if (data != NULL) {
+        // Parse accelerometer data
+        if (acc_x) *acc_x = (int16_t)((data[1] << 8) | data[0]);
+        if (acc_y) *acc_y = (int16_t)((data[3] << 8) | data[2]);
+        if (acc_z) *acc_z = (int16_t)((data[5] << 8) | data[4]);
+
+        // Parse magnetometer data
+        if (mag_x) *mag_x = (int16_t)((data[7] << 8) | data[6]);
+        if (mag_y) *mag_y = (int16_t)((data[9] << 8) | data[8]);
+        if (mag_z) *mag_z = (int16_t)((data[11] << 8) | data[10]);
+
+        // Parse gyroscope data
+        if (gyr_x) *gyr_x = (int16_t)((data[13] << 8) | data[12]);
+        if (gyr_y) *gyr_y = (int16_t)((data[15] << 8) | data[14]);
+        if (gyr_z) *gyr_z = (int16_t)((data[17] << 8) | data[16]);
+
+        free(data); // Free the allocated memory
+    }
+}
+
 
 void bno_init() {
     bno055_set_mode(NDOF);
