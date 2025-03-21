@@ -209,7 +209,7 @@ esp_err_t bno055_init(i2c_port_t port);
  * 
  * @param mode The desired operation mode
  */
-void bno055_set_mode(bno055_opmode_t mode);
+void bno055_setoprmode(bno055_opmode_t mode);
 
 /**
  * @brief Get calibration status
@@ -245,5 +245,95 @@ uint8_t bnoreadRegister(uint8_t reg_addr);
 void bno_readamg(int16_t *acc_x, int16_t *acc_y, int16_t *acc_z,
                  int16_t *mag_x, int16_t *mag_y, int16_t *mag_z,
                  int16_t *gyr_x, int16_t *gyr_y, int16_t *gyr_z);
+
+/**
+ * @brief Get the current page of the BNO055
+ * 
+ * @return uint8_t The current page number
+ */
+uint8_t bno_getpage(void);
+
+/**
+ * @brief Read Euler angles from the BNO055
+ * 
+ * @param eul_heading Pointer to store the heading value
+ * @param eul_roll Pointer to store the roll value
+ * @param eul_pitch Pointer to store the pitch value
+ */
+void bno_readeuler(int16_t *eul_heading, int16_t *eul_roll, int16_t *eul_pitch);
+
+/**
+ * @brief Read multiple registers from the BNO055
+ * 
+ * @param reg_addr The address of the first register to read
+ * @param length The number of registers to read
+ * @return uint8_t* Pointer to the data read from the registers
+ */
+uint8_t* bnoreadMultiple(uint8_t reg_addr, size_t length);
+
+/**
+ * @brief Write a value to a register of the BNO055
+ * 
+ * @param reg_addr The address of the register to write to
+ * @param data The value to write
+ * @return esp_err_t ESP_OK on success
+ */
+esp_err_t bnowriteRegister(uint8_t reg_addr, uint8_t data);
+
+/**
+ * @brief Get the current operation mode of the BNO055
+ * 
+ * @return uint8_t The current operation mode
+ */
+uint8_t bno055_get_oprmode(void);
+
+/**
+ * @brief Read quaternion data from the BNO055
+ * 
+ * @param quart_w Pointer to store the W component
+ * @param quart_x Pointer to store the X component
+ * @param quart_y Pointer to store the Y component
+ * @param quart_z Pointer to store the Z component
+ */
+void bno_readquart(int16_t *quart_w, int16_t *quart_x, int16_t *quart_y, int16_t *quart_z);
+
+/**
+ * @brief Read linear acceleration data from the BNO055
+ * 
+ * @param lia_x Pointer to store the linear acceleration X data
+ * @param lia_y Pointer to store the linear acceleration Y data
+ * @param lia_z Pointer to store the linear acceleration Z data
+ */
+void bno_readlia(int16_t *lia_x, int16_t *lia_y, int16_t *lia_z);
+
+/**
+ * @brief Read gravity data from the BNO055
+ * 
+ * @param grav_x Pointer to store the gravity X data
+ * @param grav_y Pointer to store the gravity Y data
+ * @param grav_z Pointer to store the gravity Z data
+ */
+void bno_readgrav(int16_t *grav_x, int16_t *grav_y, int16_t *grav_z);
+
+/**
+ * @brief Get the temperature from the BNO055
+ * 
+ * @return uint8_t The temperature value
+ */
+uint8_t bno_gettemp(void);
+
+/**
+ * @brief Set the page of the BNO055
+ * 
+ * @param page The page number to set
+ */
+void bno_setpage(int8_t page);
+
+void bno_get_units(uint8_t *ORI_android_windows, uint8_t *temp_unit, uint8_t *eul_unit, uint8_t *gyr_unit, uint8_t *acc_unit);
+void bno_getselftest(bool *st_mcu, bool *st_gyr, bool *st_mag, bool *st_acc);
+void bno_getinterrupts(bool *acc_nm, bool *acc_am, bool *acc_high_g, bool *gyr_drdy, bool *gyr_high_ratem, bool *mag_drdy, bool *acc_bsx_drdy);
+bool bno_getclockstatus(void);
+uint8_t bno_getsysstatus(void);
+uint8_t bno_getsyserror(void);
 
 #endif /* DRIVER_BNO055_H */
