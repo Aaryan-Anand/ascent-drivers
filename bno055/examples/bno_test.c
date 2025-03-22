@@ -6,7 +6,7 @@
 #include "ascent_r2_hardware_definition.h"
 #include "i2c_manager.h"
 
-void BNOFullTest() {
+void BNOTest() {
     printf("\n=== BNO055 Full Test ===\n");
     fflush(stdout);
     
@@ -18,7 +18,7 @@ void BNOFullTest() {
     }
 
     // Set operation mode to NDOF
-    bno055_setoprmode(NDOF);
+    bno_setoprmode(NDOF);
     printf("Operation mode set to NDOF.\n");
 
     // Read and print calibration status
@@ -36,13 +36,17 @@ void BNOFullTest() {
 
     // Read and print clock status
     bool clock_status = bno_getclockstatus();
-    printf("Clock Status: %s\n", clock_status ? "Running" : "Not Running");
+    printf("Clock Status: %s\n", clock_status ? "Configured State" : "Free to Configure");
 
     // Read and print units
-    uint8_t ori_unit, temp_unit, eul_unit, gyr_unit, acc_unit;
+    bool ori_unit, temp_unit, eul_unit, gyr_unit, acc_unit;
     bno_get_units(&ori_unit, &temp_unit, &eul_unit, &gyr_unit, &acc_unit);
-    printf("Units - Orientation: %d, Temperature: %d, Euler: %d, Gyroscope: %d, Acceleration: %d\n",
-           ori_unit, temp_unit, eul_unit, gyr_unit, acc_unit);
+    printf("Units - Orientation: %s, Temperature: %s, Euler: %s, Gyroscope: %s, Acceleration: %s\n",
+       ori_unit ? "Android" : "Windows", 
+       temp_unit ? "Fahrenheit" : "Celcius",
+       eul_unit ? "Radians" : "Degrees",
+       gyr_unit ? "Rps" : "Dps",
+       acc_unit ? "mg" : "m/s^2");
 
     // Read and print temperature
     uint8_t temperature = bno_gettemp();
@@ -62,6 +66,9 @@ void BNOFullTest() {
            st_mcu ? "Passed" : "Failed", st_gyr ? "Passed" : "Failed",
            st_mag ? "Passed" : "Failed", st_acc ? "Passed" : "Failed");
 
+    bno_setoprmode(AMG);
+    printf("\n");
+
     printf("Reading BNO055 AMG data...\n");
     for(int i = 0; i < 10; i++) {
         int16_t acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, gyr_x, gyr_y, gyr_z;
@@ -74,7 +81,7 @@ void BNOFullTest() {
     }
     printf("\n");
 
-    bno055_setoprmode(NDOF);
+    bno_setoprmode(NDOF);
 
     printf("Reading BNO055 EUL data...\n");
     for(int i = 0; i < 10; i++) {
@@ -91,7 +98,7 @@ void BNOFullTest() {
 
 void spit_out_data() {
     fflush(stdout);
-    bno055_setoprmode(NDOF);
+    bno_setoprmode(NDOF);
 
     while(1) {
     int16_t acc_x, acc_y, acc_z, mag_x, mag_y, mag_z, gyr_x, gyr_y, gyr_z;

@@ -63,7 +63,6 @@ void bno_setoprmode(bno055_opmode_t mode) {
         
         uint8_t current_mode = bno_getoprmode();
         if (current_mode == mode) {
-            ESP_LOGI(TAG, "Mode set successfully to %d", mode);
             return; // Exit if the mode is set correctly
         }
     }
@@ -209,14 +208,14 @@ uint8_t bno_getsyserror(void){
     return bnoreadRegister(0x3A);
 }
 
-void bno_get_units(uint8_t *ORI_android_windows, uint8_t *temp_unit, uint8_t *eul_unit, uint8_t *gyr_unit, uint8_t *acc_unit) {
+void bno_get_units(bool *ORI_android_windows, bool *temp_unit, bool *eul_unit, bool *gyr_unit, bool *acc_unit) {
     uint8_t units = bnoreadRegister(0x3B);
 
-    if (ORI_android_windows) *ORI_android_windows = (units >> 7);
-    if (temp_unit) *temp_unit = (units >> 4);
-    if (eul_unit) *eul_unit = (units >> 3);
-    if (gyr_unit) *gyr_unit = (units >> 2);
-    if (acc_unit) *acc_unit = (units >> 1);
+    if (ORI_android_windows) *ORI_android_windows = (units & 0x80) != 0;
+    if (temp_unit) *temp_unit = (units & 0x10) != 0;
+    if (eul_unit) *eul_unit = (units & 0x08) != 0;
+    if (gyr_unit) *gyr_unit = (units & 0x04) != 0;
+    if (acc_unit) *acc_unit = (units & 0x02) != 0;
 }
 
 uint8_t bno_gettemp(void) {

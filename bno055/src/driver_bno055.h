@@ -209,7 +209,7 @@ esp_err_t bno055_init(i2c_port_t port);
  * 
  * @param mode The desired operation mode
  */
-void bno055_setoprmode(bno055_opmode_t mode);
+void bno_setoprmode(bno055_opmode_t mode);
 
 /**
  * @brief Get calibration status
@@ -219,7 +219,7 @@ void bno055_setoprmode(bno055_opmode_t mode);
  * @param accel Accelerometer calibration status
  * @param mag Magnetometer calibration status
  */
-void bno055_get_calib(uint8_t *sys, uint8_t *gyro, uint8_t *accel, uint8_t *mag);
+void bno_get_calib(uint8_t *sys, uint8_t *gyro, uint8_t *accel, uint8_t *mag);
 
 /**
  * @brief Read a register from the BNO055
@@ -329,7 +329,7 @@ uint8_t bno_gettemp(void);
  */
 void bno_setpage(int8_t page);
 
-void bno_get_units(uint8_t *ORI_android_windows, uint8_t *temp_unit, uint8_t *eul_unit, uint8_t *gyr_unit, uint8_t *acc_unit);
+void bno_get_units(bool *ORI_android_windows, bool *temp_unit, bool *eul_unit, bool *gyr_unit, bool *acc_unit);
 void bno_getselftest(bool *st_mcu, bool *st_gyr, bool *st_mag, bool *st_acc);
 void bno_getinterrupts(bool *acc_nm, bool *acc_am, bool *acc_high_g, bool *gyr_drdy, bool *gyr_high_ratem, bool *mag_drdy, bool *acc_bsx_drdy);
 bool bno_getclockstatus(void);
