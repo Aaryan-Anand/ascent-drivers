@@ -360,6 +360,66 @@ void bno_set_tempsource(bno055_tempsource_t source) {
     ESP_LOGE(TAG, "Failed to set temp source to %d after 3 attempts", source);
 }
 
+bno_axismap bno_get_axismapconfig(void) {
+    bno_setpage(0);
+
+    bno_axismap axis_map;
+    uint8_t axis_map_reg = bnoreadRegister(0x41);
+
+    axis_map.x = (axis_map_reg & 0x03);        // Bits 1-0: X-axis mapping
+    axis_map.y = (axis_map_reg & 0x0C) >> 2;   // Bits 3-2: Y-axis mapping
+    axis_map.z = (axis_map_reg & 0x30) >> 4;   // Bits 5-4: Z-axis mapping
+
+    return axis_map;
+}
+
+void bno_set_axismapconfig(bno_axismap axis_map) {
+    bno_setpage(0);
+
+    // Ensure all values are valid (0=X, 1=Y, 2=Z) and no duplicates
+    if (axis_map.x > 2 || axis_map.y > 2 || axis_map.z > 2 ||
+        axis_map.x == axis_map.y || axis_map.x == axis_map.z || axis_map.y == axis_map.z) {
+        ESP_LOGE(TAG, "Invalid axis mapping configuration!");
+        return;
+    }
+
+    uint8_t axis_map_reg = 0x00;
+    axis_map_reg |= (axis_map.x & 0x03);       
+    axis_map_reg |= (axis_map.y & 0x03) << 2;  
+    axis_map_reg |= (axis_map.z & 0x03) << 4;  
+
+    // Write and verify
+    bnowriteRegister(0x41, axis_map_reg);
+    uint8_t verify = bnoreadRegister(0x41);
+    if (verify != axis_map_reg) {
+        ESP_LOGE(TAG, "Axis map configuration mismatch: expected 0x%02X, got 0x%02X", axis_map_reg, verify);
+    }
+}
+
+void bno_get_axismapsign(bool *x, bool *y, bool *z) {
+    bno_setpage(0);
+
+    uint8_t signs = bnoreadRegister(0x42);
+
+    if (x) *x = (signs & 0x01) != 0;
+    if (y) *y = (signs & 0x02) != 0;
+    if (z) *z = (signs & 0x04) != 0;
+}
+
+void bno_set_axismapsign(bool x, bool y, bool z) {
+    bno_setpage(0);
+
+    uint8_t signs = 0x00;
+    if (x) signs |= 0x01;
+    if (y) signs |= 0x02;
+    if (z) signs |= 0x04;
+
+    bnowriteRegister(0x42, signs);
+    uint8_t verify = bnoreadRegister(0x42);
+    if (verify != signs) {
+        ESP_LOGE(TAG, "Axis sign configuration mismatch: expected 0x%02X, got 0x%02X", signs, verify);
+    }
+}
 
 
 uint8_t bno_getpage(void) {

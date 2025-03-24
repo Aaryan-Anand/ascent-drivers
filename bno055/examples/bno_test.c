@@ -179,7 +179,31 @@ void BNOTest() {
 
     printf("\n");
 
-    printf("BNO055 Full Test Completed.\n");
+    printf("Resetting system...\n");
+
+    bno_trigger_rst();
+
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+
+    printf("\n");
+
+    printf("\nAxis Map Configuration Test...\n");
+
+    bno_axismap axis_map = bno_get_axismapconfig();
+    printf("Current Axis Map Configuration - X: %d, Y: %d, Z: %d\n", axis_map.x, axis_map.y, axis_map.z);
+
+    bno_axismap modified = {1,2,0};
+    bno_axismap normal = {0,1,2};
+    bno_set_axismapconfig(modified);
+
+    bno_axismap newaxis_map = bno_get_axismapconfig();
+    printf("New Axis Map Configuration - X: %d, Y: %d, Z: %d\n", newaxis_map.x, newaxis_map.y, newaxis_map.z);
+
+    bno_set_axismapconfig(normal);
+    bno_axismap normalaxis_map = bno_get_axismapconfig();
+    printf("Reverted to normal Axis Map Configuration - X: %d, Y: %d, Z: %d\n", normalaxis_map.x, normalaxis_map.y, normalaxis_map.z);
+
+    printf("\n\nBNO055 Full Test Completed.\n");
 }
 
 void spit_out_data() {

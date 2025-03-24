@@ -209,6 +209,15 @@ typedef enum {
 } bno055_tempsource_t;
 
 
+typedef struct {
+    uint8_t x;  // 0 = X-axis, 1 = Y-axis, 2 = Z-axis
+    uint8_t y;  // 0 = X-axis, 1 = Y-axis, 2 = Z-axis
+    uint8_t z;  // 0 = X-axis, 1 = Y-axis, 2 = Z-axis
+} bno_axismap;
+
+
+
+
 /**
  * @brief Initialize the BNO055 sensor
  * 
@@ -361,5 +370,9 @@ void bno_setinterruptmask(bool acc_nm, bool acc_am, bool acc_high_g, bool gyr_dr
 void bno_getinterruptenable(bool *acc_nm, bool *acc_am, bool *acc_high_g, bool *gyr_drdy, bool *gyr_high_ratem, bool *gyro_am, bool *mag_drdy, bool *acc_bsx_drdy);
 void bno_setinterruptenable(bool acc_nm, bool acc_am, bool acc_high_g, bool gyr_drdy, bool gyr_high_ratem, bool gyro_am, bool mag_drdy, bool acc_bsx_drdy);
 
+bno_axismap bno_get_axismapconfig(void);
+void bno_set_axismapconfig(bno_axismap axis_map);
+void bno_get_axismapsign(bool *x, bool *y, bool *z);
+void bno_set_axismapsign(bool x, bool y, bool z);
 
 #endif /* DRIVER_BNO055_H */
