@@ -203,6 +203,12 @@ typedef enum {
     INVALID = 0x03
 } bno055_powermode_t;
 
+typedef enum {
+    TEMP_ACC = 0x0,
+    TEMP_GYRO = 0x01
+} bno055_tempsource_t;
+
+
 /**
  * @brief Initialize the BNO055 sensor
  * 
@@ -292,7 +298,7 @@ esp_err_t bnowriteRegister(uint8_t reg_addr, uint8_t data);
  * 
  * @return uint8_t The current operation mode
  */
-uint8_t bno055_get_oprmode(void);
+bno055_opmode_t bno055_get_oprmode(void);
 
 /**
  * @brief Read quaternion data from the BNO055
@@ -338,14 +344,22 @@ void bno_setpage(int8_t page);
 
 void bno_get_units(bool *ORI_android_windows, bool *temp_unit, bool *eul_unit, bool *gyr_unit, bool *acc_unit);
 void bno_getselftest(bool *st_mcu, bool *st_gyr, bool *st_mag, bool *st_acc);
-void bno_getinterrupts(bool *acc_nm, bool *acc_am, bool *acc_high_g, bool *gyr_drdy, bool *gyr_high_ratem, bool *mag_drdy, bool *acc_bsx_drdy);
 bool bno_getclockstatus(void);
 uint8_t bno_getsysstatus(void);
 uint8_t bno_getsyserror(void);
+bno055_powermode_t bno_getpowermode(void);
 void bno_setpowermode(bno055_powermode_t mode);
 void bno_trigger_st(void);
 void bno_trigger_rst(void);
 void bno_trigger_int_rst(void);
+bno055_tempsource_t bno_get_tempsource(void);
+void bno_set_tempsource(bno055_tempsource_t source);
+
+void bno_getinterruptstatus(bool *acc_nm, bool *acc_am, bool *acc_high_g, bool *gyr_drdy, bool *gyr_high_ratem, bool *gyro_am, bool *mag_drdy, bool *acc_bsx_drdy);
+void bno_getinterruptmask(bool *acc_nm, bool *acc_am, bool *acc_high_g, bool *gyr_drdy, bool *gyr_high_ratem, bool *gyro_am, bool *mag_drdy, bool *acc_bsx_drdy);
+void bno_setinterruptmask(bool acc_nm, bool acc_am, bool acc_high_g, bool gyr_drdy, bool gyr_high_ratem, bool gyro_am, bool mag_drdy, bool acc_bsx_drdy);
+void bno_getinterruptenable(bool *acc_nm, bool *acc_am, bool *acc_high_g, bool *gyr_drdy, bool *gyr_high_ratem, bool *gyro_am, bool *mag_drdy, bool *acc_bsx_drdy);
+void bno_setinterruptenable(bool acc_nm, bool acc_am, bool acc_high_g, bool gyr_drdy, bool gyr_high_ratem, bool gyro_am, bool mag_drdy, bool acc_bsx_drdy);
 
 
 #endif /* DRIVER_BNO055_H */

@@ -50,19 +50,16 @@ uint8_t bno_getoprmode(void) {
     return currentmode;
 }
 
-uint8_t bno_getpowermode(void) {
+bno055_powermode_t bno_getpowermode(void) {
     bno_setpage(0);
     bno055_powermode_t powermode = bnoreadRegister(BNO_PWR_MODE_ADDR) & 0x03;
     return powermode;
 }
 
 void bno_setoprmode(bno055_opmode_t mode) {
-    bno_setpage(0);
-    bnowriteRegister(BNO_OPR_MODE_ADDR, CONFIG);
-    vTaskDelay(500 / portTICK_PERIOD_MS);
-    
     // Attempt to set the mode and verify it
     for (int i = 0; i < 3; i++) {
+        bno_setpage(0);
         bnowriteRegister(BNO_OPR_MODE_ADDR, mode);
         vTaskDelay(500 / portTICK_PERIOD_MS);
         
@@ -76,11 +73,9 @@ void bno_setoprmode(bno055_opmode_t mode) {
 }
 
 void bno_setpowermode(bno055_powermode_t mode) {
-    bno_setpage(0);
-    bnowriteRegister (BNO_PWR_MODE_ADDR, mode);
-
     // Attempt to set the mode and verify it
     for (int i = 0; i < 3; i++) {
+        bno_setpage(0);
         bnowriteRegister(BNO_PWR_MODE_ADDR, mode);
         vTaskDelay(500 / portTICK_PERIOD_MS);
         
@@ -185,7 +180,7 @@ void bno_readlia(int16_t *lia_x, int16_t *lia_y, int16_t *lia_z) {
 void bno_readgrav(int16_t *grav_x, int16_t *grav_y, int16_t *grav_z) {
     bno_setpage(0);
 
-    uint8_t *data = bnoreadMultiple(0x2F, 6);
+    uint8_t *data = bnoreadMultiple(BNO_GRV_DATA_X_MSB_ADDR, 6);
     if (data != NULL) {
     // Parse gravity acceleration data
     if (grav_x) *grav_x = (int16_t)((data[1] << 8) | data[0]);
@@ -197,7 +192,9 @@ void bno_readgrav(int16_t *grav_x, int16_t *grav_y, int16_t *grav_z) {
 }
 
 void bno_getselftest(bool *st_mcu, bool *st_gyr, bool *st_mag, bool *st_acc) {
-    uint8_t st_results = bnoreadRegister(0x36);
+    bno_setpage(0);
+
+    uint8_t st_results = bnoreadRegister(BNO_ST_RESULT_ADDR);
 
     if (st_mcu) *st_mcu = (st_results >> 0) & 0x01;
     if (st_gyr) *st_gyr = (st_results >> 1) & 0x01;
@@ -205,34 +202,107 @@ void bno_getselftest(bool *st_mcu, bool *st_gyr, bool *st_mag, bool *st_acc) {
     if (st_acc) *st_acc = (st_results >> 3) & 0x01;
 }
 
-void bno_getinterrupts(bool *acc_nm, bool *acc_am, bool *acc_high_g, bool *gyr_drdy, bool *gyr_high_ratem, bool *mag_drdy, bool *acc_bsx_drdy) {
-    uint8_t interrupts = bnoreadRegister(0x37);
+void bno_getinterruptstatus(bool *acc_nm, bool *acc_am, bool *acc_high_g, bool *gyr_drdy, bool *gyr_high_ratem, bool *gyro_am, bool *mag_drdy, bool *acc_bsx_drdy) {
+    bno_setpage(0);
 
-    if(acc_nm) *acc_nm  = (interrupts >> 7) & 0x01;
-    if(acc_am) *acc_am  = (interrupts >> 6) & 0x01;
-    if(acc_high_g) *acc_high_g  = (interrupts >> 5) & 0x01;
-    if(gyr_drdy) *gyr_drdy  = (interrupts >> 4) & 0x01;
-    if(gyr_high_ratem) *gyr_high_ratem  = (interrupts >> 3) & 0x01;
-    if(mag_drdy) *mag_drdy  = (interrupts >> 2) & 0x01;
-    if(acc_bsx_drdy) *acc_bsx_drdy  = (interrupts >> 1) & 0x01;
+    uint8_t interrupts = bnoreadRegister(BNO_INT_STA_ADDR);
+
+    if(acc_nm) *acc_nm = (interrupts >> 7) & 0x01;
+    if(acc_am) *acc_am = (interrupts >> 6) & 0x01;
+    if(acc_high_g) *acc_high_g = (interrupts >> 5) & 0x01;
+    if(gyr_drdy) *gyr_drdy = (interrupts >> 4) & 0x01;
+    if(gyr_high_ratem) *gyr_high_ratem = (interrupts >> 3) & 0x01;
+    if(gyro_am) *gyro_am = (interrupts >> 2) & 0x01;
+    if(mag_drdy) *mag_drdy = (interrupts >> 1) & 0x01;
+    if(acc_bsx_drdy) *acc_bsx_drdy = (interrupts >> 0) & 0x01; 
+}
+
+void bno_getinterruptmask(bool *acc_nm, bool *acc_am, bool *acc_high_g, bool *gyr_drdy, bool *gyr_high_ratem, bool *gyro_am, bool *mag_drdy, bool *acc_bsx_drdy) {
+    bno_setpage(1);
+    
+    uint8_t mask = bnoreadRegister(0x0F);
+
+    if(acc_nm) *acc_nm = (mask >> 7) & 0x01;
+    if(acc_am) *acc_am = (mask >> 6) & 0x01;
+    if(acc_high_g) *acc_high_g = (mask >> 5) & 0x01;
+    if(gyr_drdy) *gyr_drdy = (mask >> 4) & 0x01;
+    if(gyr_high_ratem) *gyr_high_ratem = (mask >> 3) & 0x01;
+    if(gyro_am) *gyro_am = (mask >> 2) & 0x01;
+    if(mag_drdy) *mag_drdy = (mask >> 1) & 0x01;
+    if(acc_bsx_drdy) *acc_bsx_drdy = (mask >> 0) & 0x01; 
+}
+
+void bno_setinterruptmask(bool acc_nm, bool acc_am, bool acc_high_g, bool gyr_drdy, bool gyr_high_ratem, bool gyro_am, bool mag_drdy, bool acc_bsx_drdy) {
+    bno_setpage(1);
+    
+    uint8_t mask = 0;
+    if(acc_nm) mask |= (1 << 7);
+    if(acc_am) mask |= (1 << 6);
+    if(acc_high_g) mask |= (1 << 5);
+    if(gyr_drdy) mask |= (1 << 4);
+    if(gyr_high_ratem) mask |= (1 << 3);
+    if(gyro_am) mask |= (1 << 2);
+    if(mag_drdy) mask |= (1 << 1);
+    if(acc_bsx_drdy) mask |= (1 << 0);
+
+    bnowriteRegister(INT_MSK_ADDR, mask);
+}
+
+void bno_getinterruptenable(bool *acc_nm, bool *acc_am, bool *acc_high_g, bool *gyr_drdy, bool *gyr_high_ratem, bool *gyro_am, bool *mag_drdy, bool *acc_bsx_drdy) {
+    bno_setpage(1);
+
+    uint8_t enabled = bnoreadRegister(INT_ADDR);
+
+    if(acc_nm) *acc_nm = (enabled >> 7) & 0x01;
+    if(acc_am) *acc_am = (enabled >> 6) & 0x01;
+    if(acc_high_g) *acc_high_g = (enabled >> 5) & 0x01;
+    if(gyr_drdy) *gyr_drdy = (enabled >> 4) & 0x01;
+    if(gyr_high_ratem) *gyr_high_ratem = (enabled >> 3) & 0x01;
+    if(gyro_am) *gyro_am = (enabled >> 2) & 0x01;
+    if(mag_drdy) *mag_drdy = (enabled >> 1) & 0x01;
+    if(acc_bsx_drdy) *acc_bsx_drdy = (enabled >> 0) & 0x01; 
+}
+
+void bno_setinterruptenable(bool acc_nm, bool acc_am, bool acc_high_g, bool gyr_drdy, bool gyr_high_ratem, bool gyro_am, bool mag_drdy, bool acc_bsx_drdy) {
+    bno_setpage(1);
+    
+    uint8_t enabled = 0;
+    if(acc_nm) enabled |= (1 << 7);
+    if(acc_am) enabled |= (1 << 6);
+    if(acc_high_g) enabled |= (1 << 5);
+    if(gyr_drdy) enabled |= (1 << 4);
+    if(gyr_high_ratem) enabled |= (1 << 3);
+    if(gyro_am) enabled |= (1 << 2);
+    if(mag_drdy) enabled |= (1 << 1);
+    if(acc_bsx_drdy) enabled |= (1 << 0);
+
+    bnowriteRegister(INT_ADDR, enabled);
 }
 
 bool bno_getclockstatus(void){
+    bno_setpage(0);
+
     uint8_t sys_clk_status = bnoreadRegister(0x38);
 
     return ((sys_clk_status >> 1) & 0x01);
 }
 
 uint8_t bno_getsysstatus(void){
-    return bnoreadRegister(0x39);
+    bno_setpage(0);
+
+    return bnoreadRegister(BNO_SYS_STATUS_ADDR);
 }
 
 uint8_t bno_getsyserror(void){
-    return bnoreadRegister(0x3A);
+    bno_setpage(0);
+
+    return bnoreadRegister(BNO_SYS_ERR_ADDR);
 }
 
 void bno_get_units(bool *ORI_android_windows, bool *temp_unit, bool *eul_unit, bool *gyr_unit, bool *acc_unit) {
-    uint8_t units = bnoreadRegister(0x3B);
+    bno_setpage(0);
+
+    uint8_t units = bnoreadRegister(BNO_UNIT_SEL_ADDR);
 
     if (ORI_android_windows) *ORI_android_windows = (units & 0x80) != 0;
     if (temp_unit) *temp_unit = (units & 0x10) != 0;
@@ -242,25 +312,66 @@ void bno_get_units(bool *ORI_android_windows, bool *temp_unit, bool *eul_unit, b
 }
 
 uint8_t bno_gettemp(void) {
-    return bnoreadRegister(0x34);
+    bno_setpage(0);
+
+    return bnoreadRegister(BNO_TEMP_ADDR);
 }
 
 void bno_trigger_st(void) {
-    bnowriteRegister(0x3F,0x01);
+    bno_setpage(0);
+
+    bnowriteRegister(BNO_SYS_TRIGGER_ADDR,0x01);
 }
 
 void bno_trigger_rst(void) {
-    bnowriteRegister(0x3F,0x20);
+    bno_setpage(0);
+
+    bnowriteRegister(BNO_SYS_TRIGGER_ADDR,0x20);
 }
 
 void bno_trigger_int_rst(void) {
-    bnowriteRegister(0x3F,0x40);
+    bno_setpage(0);
+    
+    bnowriteRegister(BNO_SYS_TRIGGER_ADDR,0x40);
 }
+
+
+
+bno055_tempsource_t bno_get_tempsource(void) {
+    bno_setpage(0);
+
+    return bnoreadRegister(0x40) & 0x01;
+}
+
+void bno_set_tempsource(bno055_tempsource_t source) {
+    bno_setpage(0);
+    
+    // Attempt to set the temperature source and verify it
+    for (int i = 0; i < 3; i++) {
+        bnowriteRegister(0x40, source);
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+        
+        bno055_tempsource_t current_source = bno_get_tempsource();
+        if (current_source == source) {
+            return; // Exit if the temperature source is set correctly
+        }
+    }
+
+    ESP_LOGE(TAG, "Failed to set temp source to %d after 3 attempts", source);
+}
+
+
 
 uint8_t bno_getpage(void) {
     return bnoreadRegister(0x07); // Read the page ID from register 0x7
 }
 
+static uint8_t current_page = 0; // Static variable to hold the current page
+
 void bno_setpage(int8_t page) {
+    if (current_page == page) {
+        return; // Exit if the current page is already the desired page
+    }
     bnowriteRegister(0x07, page);
+    current_page = page; // Update the static variable with the new page
 }

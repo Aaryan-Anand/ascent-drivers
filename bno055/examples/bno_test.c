@@ -52,13 +52,6 @@ void BNOTest() {
     uint8_t temperature = bno_gettemp();
     printf("Temperature: %d °C\n", temperature);
 
-    // Read and print interrupt status
-    bool acc_nm, acc_am, acc_high_g, gyr_drdy, gyr_high_ratem, mag_drdy, acc_bsx_drdy;
-    bno_getinterrupts(&acc_nm, &acc_am, &acc_high_g, &gyr_drdy, &gyr_high_ratem, &mag_drdy, &acc_bsx_drdy);
-    printf("Interrupts - Acc NM: %s, Acc AM: %s, Acc High G: %s, Gyro DRDY: %s, Gyro High Rate: %s, Mag DRDY: %s, Acc BSX DRDY: %s\n",
-           acc_nm ? "Yes" : "No", acc_am ? "Yes" : "No", acc_high_g ? "Yes" : "No",
-           gyr_drdy ? "Yes" : "No", gyr_high_ratem ? "Yes" : "No", mag_drdy ? "Yes" : "No", acc_bsx_drdy ? "Yes" : "No");
-
     bno_setoprmode(AMG);
     printf("\n");
 
@@ -120,7 +113,72 @@ void BNOTest() {
     printf("Self-Test Results - MCU: %s, Gyro: %s, Mag: %s, Acc: %s\n",
            st_mcu ? "Passed" : "Failed", st_gyr ? "Passed" : "Failed",
            st_mag ? "Passed" : "Failed", st_acc ? "Passed" : "Failed");
+
+    printf("\n");
+
+    printf("Setting temperature source to accelerometer...\n");
+
+    bno_set_tempsource(TEMP_ACC);
+
+    printf("Setting temperature source to gyroscope...\n");
+
+    bno_set_tempsource(TEMP_GYRO);
+
+    printf("Reverting temperature source to accelerometer...\n");
+
+    bno_set_tempsource(TEMP_ACC);  
+
+    printf("\n");   
+
+    printf("Triggering interrupt reset...\n");
+
+    bno_trigger_int_rst();
+
+    // Read and print interrupt status
+    bool acc_nm, acc_am, acc_high_g, gyr_drdy, gyr_high_ratem, gyro_am, mag_drdy, acc_bsx_drdy;
+    bno_getinterruptstatus(&acc_nm, &acc_am, &acc_high_g, &gyr_drdy, &gyr_high_ratem, &gyro_am, &mag_drdy, &acc_bsx_drdy);
+    printf("Interrupts - Acc NM: %s, Acc AM: %s, Acc High G: %s, Gyro DRDY: %s, Gyro High Rate: %s, Gyro AM: %s, Mag DRDY: %s, Acc BSX DRDY: %s\n",
+           acc_nm ? "Yes" : "No", acc_am ? "Yes" : "No", acc_high_g ? "Yes" : "No",
+           gyr_drdy ? "Yes" : "No", gyr_high_ratem ? "Yes" : "No", gyro_am ? "Yes" : "No", mag_drdy ? "Yes" : "No", acc_bsx_drdy ? "Yes" : "No");
     
+    printf("\n");
+
+    printf("Changing to page 0...\n");
+
+    bno_setpage(0);
+
+    printf("Changing to page 1...\n");
+
+    bno_setpage(1);
+
+    printf("Reverting to page 0...\n");
+
+    bno_setpage(0);
+
+    printf("\nVerifying Interrupt Status and Mask...\n");
+
+    // Get current interrupt status
+    bno_getinterruptstatus(&acc_nm, &acc_am, &acc_high_g, &gyr_drdy, &gyr_high_ratem, &gyro_am, &mag_drdy, &acc_bsx_drdy);
+    printf("Current Interrupt Status - Acc NM: %s, Acc AM: %s, Acc High G: %s, Gyro DRDY: %s, Gyro High Rate: %s, Gyro AM: %s, Mag DRDY: %s, Acc BSX DRDY: %s\n",
+           acc_nm ? "Yes" : "No", acc_am ? "Yes" : "No", acc_high_g ? "Yes" : "No",
+           gyr_drdy ? "Yes" : "No", gyr_high_ratem ? "Yes" : "No", gyro_am ? "Yes" : "No", mag_drdy ? "Yes" : "No", acc_bsx_drdy ? "Yes" : "No");
+
+    // Set interrupt mask
+    bno_setinterruptmask(true, true, true, true, true, true, true, true);
+    printf("Interrupt Mask Set to Enable All.\n");
+
+    // Verify interrupt mask
+    bno_getinterruptmask(&acc_nm, &acc_am, &acc_high_g, &gyr_drdy, &gyr_high_ratem, &gyro_am, &mag_drdy, &acc_bsx_drdy);
+    printf("New Interrupt Mask - Acc NM: %s, Acc AM: %s, Acc High G: %s, Gyro DRDY: %s, Gyro High Rate: %s, Gyro AM: %s, Mag DRDY: %s, Acc BSX DRDY: %s\n",
+           acc_nm ? "Enabled" : "Disabled", acc_am ? "Enabled" : "Disabled", acc_high_g ? "Enabled" : "Disabled",
+           gyr_drdy ? "Enabled" : "Disabled", gyr_high_ratem ? "Enabled" : "Disabled", gyro_am ? "Enabled" : "Disabled", mag_drdy ? "Enabled" : "Disabled", acc_bsx_drdy ? "Enabled" : "Disabled");
+
+    // Set interrupt mask
+    bno_setinterruptmask(false, false, false, false, false, false, false, false);
+    printf("Interrupt Mask set to disable all.\n");
+
+    printf("\n");
+
     printf("BNO055 Full Test Completed.\n");
 }
 
