@@ -46,9 +46,14 @@ esp_err_t bnowriteRegister(uint8_t reg_addr, uint8_t data) {
 
 uint8_t bno_getoprmode(void) {
     bno_setpage(0);
-    uint8_t currentmode = bnoreadRegister(BNO_OPR_MODE_ADDR);
-    vTaskDelay(50 / portTICK_PERIOD_MS);
+    bno055_opmode_t currentmode = bnoreadRegister(BNO_OPR_MODE_ADDR);
     return currentmode;
+}
+
+uint8_t bno_getpowermode(void) {
+    bno_setpage(0);
+    bno055_powermode_t powermode = bnoreadRegister(BNO_PWR_MODE_ADDR) & 0x03;
+    return powermode;
 }
 
 void bno_setoprmode(bno055_opmode_t mode) {
@@ -68,6 +73,24 @@ void bno_setoprmode(bno055_opmode_t mode) {
     }
     
     ESP_LOGE(TAG, "Failed to set mode to %d after 3 attempts", mode);
+}
+
+void bno_setpowermode(bno055_powermode_t mode) {
+    bno_setpage(0);
+    bnowriteRegister (BNO_PWR_MODE_ADDR, mode);
+
+    // Attempt to set the mode and verify it
+    for (int i = 0; i < 3; i++) {
+        bnowriteRegister(BNO_PWR_MODE_ADDR, mode);
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+        
+        uint8_t current_mode = bno_getpowermode();
+        if (current_mode == mode) {
+            return; // Exit if the mode is set correctly
+        }
+    }
+
+    ESP_LOGE(TAG, "Failed to set power mode to %d after 3 attempts", mode);
 }
 
 void bno_get_calib(uint8_t *sys, uint8_t *gyro, uint8_t *accel, uint8_t *mag) {
@@ -220,6 +243,18 @@ void bno_get_units(bool *ORI_android_windows, bool *temp_unit, bool *eul_unit, b
 
 uint8_t bno_gettemp(void) {
     return bnoreadRegister(0x34);
+}
+
+void bno_trigger_st(void) {
+    bnowriteRegister(0x3F,0x01);
+}
+
+void bno_trigger_rst(void) {
+    bnowriteRegister(0x3F,0x20);
+}
+
+void bno_trigger_int_rst(void) {
+    bnowriteRegister(0x3F,0x40);
 }
 
 uint8_t bno_getpage(void) {

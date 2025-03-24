@@ -43,7 +43,7 @@ void BNOTest() {
     bno_get_units(&ori_unit, &temp_unit, &eul_unit, &gyr_unit, &acc_unit);
     printf("Units - Orientation: %s, Temperature: %s, Euler: %s, Gyroscope: %s, Acceleration: %s\n",
        ori_unit ? "Android" : "Windows", 
-       temp_unit ? "Fahrenheit" : "Celcius",
+       temp_unit ? "Fahrenheit" : "Celsius",
        eul_unit ? "Radians" : "Degrees",
        gyr_unit ? "Rps" : "Dps",
        acc_unit ? "mg" : "m/s^2");
@@ -58,13 +58,6 @@ void BNOTest() {
     printf("Interrupts - Acc NM: %s, Acc AM: %s, Acc High G: %s, Gyro DRDY: %s, Gyro High Rate: %s, Mag DRDY: %s, Acc BSX DRDY: %s\n",
            acc_nm ? "Yes" : "No", acc_am ? "Yes" : "No", acc_high_g ? "Yes" : "No",
            gyr_drdy ? "Yes" : "No", gyr_high_ratem ? "Yes" : "No", mag_drdy ? "Yes" : "No", acc_bsx_drdy ? "Yes" : "No");
-
-    // Read and print self-test results
-    bool st_mcu, st_gyr, st_mag, st_acc;
-    bno_getselftest(&st_mcu, &st_gyr, &st_mag, &st_acc);
-    printf("Self-Test Results - MCU: %s, Gyro: %s, Mag: %s, Acc: %s\n",
-           st_mcu ? "Passed" : "Failed", st_gyr ? "Passed" : "Failed",
-           st_mag ? "Passed" : "Failed", st_acc ? "Passed" : "Failed");
 
     bno_setoprmode(AMG);
     printf("\n");
@@ -93,6 +86,41 @@ void BNOTest() {
     }
     printf("\n");
 
+    printf("Setting operation mode to config...\n");
+
+    bno_setoprmode(CONFIG);
+
+    printf("Setting power mode to normal...\n");
+
+    bno_setpowermode(NORMAL);
+
+    printf("Setting power mode to low power...\n");
+
+    bno_setpowermode(LOWPOWER);
+
+    printf("Setting power mode to suspend...\n");
+
+    bno_setpowermode(SUSPEND);
+
+    printf("Reverting power mode to normal...\n");
+
+    bno_setpowermode(NORMAL);
+
+    printf("\n");
+
+    printf("Triggering self-test...\n");
+
+    bno_trigger_st();
+
+    vTaskDelay(450 / portTICK_PERIOD_MS); //needed 400ms delay
+
+    // Read and print self-test results
+    bool st_mcu, st_gyr, st_mag, st_acc;
+    bno_getselftest(&st_mcu, &st_gyr, &st_mag, &st_acc);
+    printf("Self-Test Results - MCU: %s, Gyro: %s, Mag: %s, Acc: %s\n",
+           st_mcu ? "Passed" : "Failed", st_gyr ? "Passed" : "Failed",
+           st_mag ? "Passed" : "Failed", st_acc ? "Passed" : "Failed");
+    
     printf("BNO055 Full Test Completed.\n");
 }
 

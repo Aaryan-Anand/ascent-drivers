@@ -196,6 +196,13 @@ typedef enum {
     NDOF = 0X0C
 } bno055_opmode_t;
 
+typedef enum {
+    NORMAL = 0x00,
+    LOWPOWER = 0x01,
+    SUSPEND = 0x02,
+    INVALID = 0x03
+} bno055_powermode_t;
+
 /**
  * @brief Initialize the BNO055 sensor
  * 
@@ -335,5 +342,10 @@ void bno_getinterrupts(bool *acc_nm, bool *acc_am, bool *acc_high_g, bool *gyr_d
 bool bno_getclockstatus(void);
 uint8_t bno_getsysstatus(void);
 uint8_t bno_getsyserror(void);
+void bno_setpowermode(bno055_powermode_t mode);
+void bno_trigger_st(void);
+void bno_trigger_rst(void);
+void bno_trigger_int_rst(void);
+
 
 #endif /* DRIVER_BNO055_H */
