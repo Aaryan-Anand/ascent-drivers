@@ -421,6 +421,56 @@ void bno_set_axismapsign(bool x, bool y, bool z) {
     }
 }
 
+void bno_configure_acc(bno055_acc_pwrmode_t pwr, bno055_acc_bandwidth_t bandwidth, bno055_acc_range_t range) {
+    uint8_t config;
+    bno_setpage(1);
+    config = (pwr << 5) | (bandwidth << 3) | range;
+    bnowriteRegister(ACC_CONFIG_ADDR,config);
+}
+
+void bno_config_mag(bno055_mag_pwrmode_t pwr, bno055_mag_oprmode_t oprmode, bno055_mag_datarate_t datarate) {
+    uint8_t config;
+    bno_setpage(1);
+    config = (pwr << 5) | (oprmode << 3) | datarate;
+    bnowriteRegister(MAG_CONFIG_ADDR,config);
+}
+
+void bno_configure_gyro(bno055_gyro_range_t range, bno055_gyro_bandwidth_t bandwidth, bno055_gyro_powermode_t pwr) {
+    uint8_t config_0;
+    uint8_t config_1;
+    bno_setpage(1);
+
+    config_0 = (bandwidth << 4) | range;
+    config_1 = pwr;
+
+    bnowriteRegister(GYRO_CONFIG_ADDR,config_0);
+    bnowriteRegister(GYRO_MODE_CONFIG_ADDR,config_1);
+}
+
+void bno_getacc_config(bno055_acc_pwrmode_t *pwr, bno055_acc_bandwidth_t *bandwidth, bno055_acc_range_t *range) {
+    uint8_t currentconfig = bnoreadRegister(ACC_CONFIG_ADDR);
+
+    if (pwr) *pwr = (bno055_acc_pwrmode_t)(currentconfig >> 5);
+    if (bandwidth) *bandwidth = (bno055_acc_bandwidth_t)(currentconfig >> 3) & 0x03;
+    if (range) *range = (bno055_acc_range_t)(currentconfig & 0x03);
+}
+
+void bno_getmag_config(bno055_mag_pwrmode_t *pwr, bno055_mag_oprmode_t *oprmode, bno055_mag_datarate_t *datarate) {
+    uint8_t currentconfig = bnoreadRegister(MAG_CONFIG_ADDR);
+
+    if (pwr) *pwr = (bno055_mag_pwrmode_t)(currentconfig >> 5);
+    if (oprmode) *oprmode = (bno055_mag_oprmode_t)(currentconfig >> 3) & 0x03;
+    if (datarate) *datarate = (bno055_mag_datarate_t)(currentconfig & 0x07);
+}
+
+void bno_getgyro_config(bno055_gyro_range_t *range, bno055_gyro_bandwidth_t *bandwidth, bno055_gyro_powermode_t *pwr) {
+    uint8_t config_0 = bnoreadRegister(GYRO_CONFIG_ADDR);
+    uint8_t config_1 = bnoreadRegister(GYRO_MODE_CONFIG_ADDR);
+
+    if (range) *range = (bno055_gyro_range_t)(config_0 & 0x0F);
+    if (bandwidth) *bandwidth = (bno055_gyro_bandwidth_t)(config_0 >> 4);
+    if (pwr) *pwr = (bno055_gyro_powermode_t)(config_1);
+}
 
 uint8_t bno_getpage(void) {
     return bnoreadRegister(0x07); // Read the page ID from register 0x7
@@ -432,6 +482,7 @@ void bno_setpage(int8_t page) {
     if (current_page == page) {
         return; // Exit if the current page is already the desired page
     }
+    
     bnowriteRegister(0x07, page);
     current_page = page; // Update the static variable with the new page
 }

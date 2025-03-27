@@ -203,6 +203,70 @@ void BNOTest() {
     bno_axismap normalaxis_map = bno_get_axismapconfig();
     printf("Reverted to normal Axis Map Configuration - X: %d, Y: %d, Z: %d\n", normalaxis_map.x, normalaxis_map.y, normalaxis_map.z);
 
+    printf("\n");
+
+    bno_setoprmode(CONFIG);
+
+    //attempt to set to defaults
+
+    printf("\nConfiguring Accelerometer, Magnetometer, and Gyroscope to defaults...\n");
+    bno_configure_acc(ACC_C_NORMAL, ACC_C_H62_50,ACC_C_RANGE_4G);
+    bno_config_mag(MAG_C_NORMAL, MAG_C_REGULAR, MAG_C_H10);
+    bno_configure_gyro(GYRO_C_D2000, GYRO_C_H32, GYRO_C_NORMAL);
+
+    printf("\nReading config from registers:");
+    bno055_acc_pwrmode_t acc_pwr;
+    bno055_acc_bandwidth_t acc_bandwidth;
+    bno055_acc_range_t acc_range;
+    bno_getacc_config(&acc_pwr, &acc_bandwidth, &acc_range);
+    printf("Accelerometer Configuration - Power Mode: %d, Bandwidth: %d, Range: %d\n", acc_pwr, acc_bandwidth, acc_range);
+
+    bno055_mag_pwrmode_t mag_pwr;
+    bno055_mag_oprmode_t mag_oprmode;
+    bno055_mag_datarate_t mag_datarate;
+    bno_getmag_config(&mag_pwr, &mag_oprmode, &mag_datarate);
+    printf("Magnetometer Configuration - Power Mode: %d, Operation Mode: %d, Data Rate: %d\n", mag_pwr, mag_oprmode, mag_datarate);
+
+    bno055_gyro_range_t gyro_range;
+    bno055_gyro_bandwidth_t gyro_bandwidth;
+    bno055_gyro_powermode_t gyro_pwr;
+    bno_getgyro_config(&gyro_range, &gyro_bandwidth, &gyro_pwr);
+    printf("Gyroscope Configuration - Range: %d, Bandwidth: %d, Power Mode: %d\n", gyro_range, gyro_bandwidth, gyro_pwr);
+
+    //attempt to max out the config
+
+    printf("\nConfiguring Accelerometer, Magnetometer, and Gyroscope to max...\n");
+    bno_configure_acc(ACC_C_NORMAL, ACC_C_H1000, ACC_C_RANGE_16G);
+    bno_config_mag(MAG_C_NORMAL, MAG_C_HIGHACCURACY, MAG_C_H30);
+    bno_configure_gyro(GYRO_C_D2000, GYRO_C_H523, GYRO_C_NORMAL);
+
+    printf("\nReading config from registers:");
+    bno_getacc_config(&acc_pwr, &acc_bandwidth, &acc_range);
+    printf("Accelerometer Configuration - Power Mode: %d, Bandwidth: %d, Range: %d\n", acc_pwr, acc_bandwidth, acc_range);
+
+    bno_getmag_config(&mag_pwr, &mag_oprmode, &mag_datarate);
+    printf("Magnetometer Configuration - Power Mode: %d, Operation Mode: %d, Data Rate: %d\n", mag_pwr, mag_oprmode, mag_datarate);
+
+    bno_getgyro_config(&gyro_range, &gyro_bandwidth, &gyro_pwr);
+    printf("Gyroscope Configuration - Range: %d, Bandwidth: %d, Power Mode: %d\n", gyro_range, gyro_bandwidth, gyro_pwr);
+
+    //revert to defaults
+
+    printf("\nConfiguring Accelerometer, Magnetometer, and Gyroscope to defaults...\n");
+    bno_configure_acc(ACC_C_NORMAL, ACC_C_H62_50, ACC_C_RANGE_4G);
+    bno_config_mag(MAG_C_NORMAL, MAG_C_REGULAR, MAG_C_H10);
+    bno_configure_gyro(GYRO_C_D2000, GYRO_C_H32, GYRO_C_NORMAL);
+
+    printf("\nReading config from registers:");
+    bno_getacc_config(&acc_pwr, &acc_bandwidth, &acc_range);
+    printf("Accelerometer Configuration - Power Mode: %d, Bandwidth: %d, Range: %d\n", acc_pwr, acc_bandwidth, acc_range);
+
+    bno_getmag_config(&mag_pwr, &mag_oprmode, &mag_datarate);
+    printf("Magnetometer Configuration - Power Mode: %d, Operation Mode: %d, Data Rate: %d\n", mag_pwr, mag_oprmode, mag_datarate);
+
+    bno_getgyro_config(&gyro_range, &gyro_bandwidth, &gyro_pwr);
+    printf("Gyroscope Configuration - Range: %d, Bandwidth: %d, Power Mode: %d\n", gyro_range, gyro_bandwidth, gyro_pwr);
+
     printf("\n\nBNO055 Full Test Completed.\n");
 }
 

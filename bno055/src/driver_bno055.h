@@ -215,6 +215,83 @@ typedef struct {
     uint8_t z;  // 0 = X-axis, 1 = Y-axis, 2 = Z-axis
 } bno_axismap;
 
+typedef enum {
+    ACC_C_NORMAL = 0x0, //default
+    ACC_C_SUSPEND = 0x01,
+    ACC_C_LOWPOWER1 = 0x02,
+    ACC_C_STANDBY = 0x03,
+    ACC_C_LOWPOWER2 = 0x04,
+    ACC_C_DEEPSUSPEND = 0x05
+} bno055_acc_pwrmode_t;
+
+typedef enum {
+    ACC_C_H7_18 = 0x0,
+    ACC_C_H15_63 = 0x01,
+    ACC_C_H31_23 = 0x02,
+    ACC_C_H62_50 = 0x03, //default
+    ACC_C_H125 = 0x04,
+    ACC_C_H250 = 0x05,
+    ACC_C_H500 = 0x06,
+    ACC_C_H1000 = 0x07
+} bno055_acc_bandwidth_t;
+
+typedef enum {
+    ACC_C_RANGE_2G = 0x0,
+    ACC_C_RANGE_4G = 0x01, //default
+    ACC_C_RANGE_8G = 0x02,
+    ACC_C_RANGE_16G = 0x03
+} bno055_acc_range_t;
+typedef enum {
+    MAG_C_NORMAL = 0x0, //default
+    MAG_C_SLEEP = 0x01,
+    MAG_C_SUSPEND = 0x02,
+    MAG_C_FORCEMODE = 0x03
+} bno055_mag_pwrmode_t;
+
+typedef enum {
+    MAG_C_LOWPOWER = 0x0,
+    MAG_C_REGULAR = 0x01, //default
+    MAG_C_ENHANCED = 0x02,
+    MAG_C_HIGHACCURACY = 0x03
+} bno055_mag_oprmode_t;
+
+typedef enum {
+    MAG_C_H2 = 0x0,
+    MAG_C_H6 = 0x01,
+    MAG_C_H8 = 0x02,
+    MAG_C_H10 = 0x03, //defualt
+    MAG_C_H15 = 0x04,
+    MAG_C_H20 = 0x05,
+    MAG_C_H25 = 0x06,
+    MAG_C_H30 = 0x07
+} bno055_mag_datarate_t;
+
+typedef enum {
+    GYRO_C_D2000 = 0x0, //default
+    GYRO_C_D1000 = 0x01,
+    GYRO_C_D500 = 0x02,
+    GYRO_C_D250 = 0x03,
+    GYRO_C_D125 = 0x04
+} bno055_gyro_range_t;
+
+typedef enum {
+    GYRO_C_H523 = 0x0,
+    GYRO_C_H230 = 0x01,
+    GYRO_C_H116 = 0x02,
+    GYRO_C_H47 = 0x03,
+    GYRO_C_H23 = 0x04,
+    GYRO_C_H12 = 0x05,
+    GYRO_C_H64 = 0x06,
+    GYRO_C_H32 = 0x07 //default
+} bno055_gyro_bandwidth_t;
+
+typedef enum {
+    GYRO_C_NORMAL = 0x0, //default
+    GYRO_C_FASTPOWERUP = 0x01,
+    GYRO_C_DEEPSUSPEND = 0x02,
+    GYRO_C_SUSPEND = 0x03,
+    GYRO_C_ADVANCEPOWERSAVE = 0x04
+} bno055_gyro_powermode_t;
 
 
 
@@ -374,5 +451,14 @@ bno_axismap bno_get_axismapconfig(void);
 void bno_set_axismapconfig(bno_axismap axis_map);
 void bno_get_axismapsign(bool *x, bool *y, bool *z);
 void bno_set_axismapsign(bool x, bool y, bool z);
+
+void bno_configure_acc(bno055_acc_pwrmode_t pwr, bno055_acc_bandwidth_t bandwidth, bno055_acc_range_t range);
+void bno_config_mag(bno055_mag_pwrmode_t pwr, bno055_mag_oprmode_t oprmode, bno055_mag_datarate_t datarate);
+void bno_configure_gyro(bno055_gyro_range_t range, bno055_gyro_bandwidth_t bandwidth, bno055_gyro_powermode_t pwr);
+
+void bno_getacc_config(bno055_acc_pwrmode_t *pwr, bno055_acc_bandwidth_t *bandwidth, bno055_acc_range_t *range);
+void bno_getmag_config(bno055_mag_pwrmode_t *pwr, bno055_mag_oprmode_t *oprmode, bno055_mag_datarate_t *datarate);
+void bno_getgyro_config(bno055_gyro_range_t *range, bno055_gyro_bandwidth_t *bandwidth, bno055_gyro_powermode_t *pwr);
+
 
 #endif /* DRIVER_BNO055_H */
