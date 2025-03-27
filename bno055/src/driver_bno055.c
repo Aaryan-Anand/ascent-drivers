@@ -840,7 +840,11 @@ void bno_set_gyro_offsets(uint16_t x_offset, uint16_t y_offset, uint16_t z_offse
 
 void bno_get_acc_radius(uint16_t *acc_radius) {
     bno_setpage(0);
-    if(acc_radius) *acc_radius = bnoreadMultiple(0x67,2);
+    uint8_t *radius_data = bnoreadMultiple(0x67, 2); // Read 2 bytes for the radius
+    if (radius_data != NULL) {
+        if (acc_radius) *acc_radius = (uint16_t)((radius_data[1] << 8) | radius_data[0]); // Correctly assign the value
+        free(radius_data); // Free the allocated memory
+    }
 }
 
 void bno_set_acc_radius(uint16_t acc_radius) {
@@ -856,7 +860,11 @@ void bno_set_acc_radius(uint16_t acc_radius) {
 
 void bno_get_mag_radius(uint16_t *mag_radius) {
     bno_setpage(0);
-    if (mag_radius) *mag_radius = bnoreadMultiple(0x69, 2);
+    uint8_t *radius_data = bnoreadMultiple(0x69, 2); // Read 2 bytes for the radius
+    if (radius_data != NULL) {
+        if (mag_radius) *mag_radius = (uint16_t)((radius_data[1] << 8) | radius_data[0]); // Correctly assign the value
+        free(radius_data); // Free the allocated memory
+    }
 }
 
 void bno_set_mag_radius(uint16_t mag_radius) {
