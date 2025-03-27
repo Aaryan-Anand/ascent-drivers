@@ -713,6 +713,164 @@ void bno_set_gyr_am_set(uint8_t awake_duration, uint8_t slope_samples) {
     bnowriteRegister(0x1F, gyr_am_set);
 }
 
+void bno_get_sic_matrix(bno055_sic_matrix_t *matrix) {
+    bno_setpage(0);
+
+    if (matrix) {
+        uint8_t *data = bnoreadMultiple(0x43, 18);
+        if (data != NULL) {
+            matrix->Matrix1 = (int16_t)((data[1] << 8) | data[0]);
+            matrix->Matrix2 = (int16_t)((data[3] << 8) | data[2]);
+            matrix->Matrix3 = (int16_t)((data[5] << 8) | data[4]);
+            matrix->Matrix4 = (int16_t)((data[7] << 8) | data[6]);
+            matrix->Matrix5 = (int16_t)((data[9] << 8) | data[8]);
+            matrix->Matrix6 = (int16_t)((data[11] << 8) | data[10]);
+            matrix->Matrix7 = (int16_t)((data[13] << 8) | data[12]);
+            matrix->Matrix8 = (int16_t)((data[15] << 8) | data[14]);
+            matrix->Matrix9 = (int16_t)((data[17] << 8) | data[16]);
+            free(data);
+        }
+    }
+}
+
+void bno_set_sic_matrix(bno055_sic_matrix_t matrix) {
+    bno_setpage(0);
+    uint8_t data[18];
+    data[0] = (matrix.Matrix1 >> 8);
+    data[1] = (matrix.Matrix1 & 0xFF);
+    data[2] = (matrix.Matrix2 >> 8);
+    data[3] = (matrix.Matrix2 & 0xFF);
+    data[4] = (matrix.Matrix3 >> 8);
+    data[5] = (matrix.Matrix3 & 0xFF);
+    data[6] = (matrix.Matrix4 >> 8);
+    data[7] = (matrix.Matrix4 & 0xFF);
+    data[8] = (matrix.Matrix5 >> 8);
+    data[9] = (matrix.Matrix5 & 0xFF);
+    data[10] = (matrix.Matrix6 >> 8);
+    data[11] = (matrix.Matrix6 & 0xFF);
+    data[12] = (matrix.Matrix7 >> 8);
+    data[13] = (matrix.Matrix7 & 0xFF);
+    data[14] = (matrix.Matrix8 >> 8);
+    data[15] = (matrix.Matrix8 & 0xFF);
+    data[16] = (matrix.Matrix9 >> 8);
+    data[17] = (matrix.Matrix9 & 0xFF);
+
+    for (int i = 0; i < 18; i++) {
+        bnowriteRegister(0x43 + i, data[i]);
+    }
+}
+
+void bno_get_acc_offsets(uint16_t *x_offset, uint16_t *y_offset, uint16_t *z_offset) {
+    bno_setpage(0);
+    uint8_t *acc_offsets = bnoreadMultiple(0x55,6);
+    if (acc_offsets != NULL) {
+        *x_offset = (uint16_t)((acc_offsets[1] << 8) | acc_offsets[0]);
+        *y_offset = (uint16_t)((acc_offsets[3] << 8) | acc_offsets[2]);
+        *z_offset = (uint16_t)((acc_offsets[5] << 8) | acc_offsets[4]);
+        free(acc_offsets);
+    }
+}
+
+void bno_set_acc_offsets(uint16_t x_offset, uint16_t y_offset, uint16_t z_offset) {
+    bno_setpage(0);
+    uint8_t data[6];
+    data[0] = (x_offset >> 8);
+    data[1] = (x_offset & 0xFF);
+    data[2] = (y_offset >> 8);
+    data[3] = (y_offset & 0xFF);
+    data[4] = (z_offset >> 8);
+    data[5] = (z_offset & 0xFF);
+
+    for (int i = 0; i < 6; i++) {
+        bnowriteRegister(0x55 + i, data[i]);
+    }
+}
+
+void bno_get_mag_offsets(uint16_t *x_offset, uint16_t *y_offset, uint16_t *z_offset) {
+    bno_setpage(0);
+    uint8_t *mag_offsets = bnoreadMultiple(0x5B, 6);
+    if (mag_offsets != NULL) {
+        *x_offset = (uint16_t)((mag_offsets[1] << 8) | mag_offsets[0]);
+        *y_offset = (uint16_t)((mag_offsets[3] << 8) | mag_offsets[2]);
+        *z_offset = (uint16_t)((mag_offsets[5] << 8) | mag_offsets[4]);
+        free(mag_offsets);
+    }
+}
+
+void bno_set_mag_offsets(uint16_t x_offset, uint16_t y_offset, uint16_t z_offset) {
+    bno_setpage(0);
+    uint8_t data[6];
+    data[0] = (x_offset >> 8);
+    data[1] = (x_offset & 0xFF);
+    data[2] = (y_offset >> 8);
+    data[3] = (y_offset & 0xFF);
+    data[4] = (z_offset >> 8);
+    data[5] = (z_offset & 0xFF);
+
+    for (int i = 0; i < 6; i++) {
+        bnowriteRegister(0x5B + i, data[i]);
+    }
+}
+
+void bno_get_gyro_offsets(uint16_t *x_offset, uint16_t *y_offset, uint16_t *z_offset) {
+    bno_setpage(0);
+    uint8_t *gyro_offsets = bnoreadMultiple(0x61, 6);
+    if (gyro_offsets != NULL) {
+        *x_offset = (uint16_t)((gyro_offsets[1] << 8) | gyro_offsets[0]);
+        *y_offset = (uint16_t)((gyro_offsets[3] << 8) | gyro_offsets[2]);
+        *z_offset = (uint16_t)((gyro_offsets[5] << 8) | gyro_offsets[4]);
+        free(gyro_offsets);
+    }
+}
+
+void bno_set_gyro_offsets(uint16_t x_offset, uint16_t y_offset, uint16_t z_offset) {
+    bno_setpage(0);
+    uint8_t data[6];
+    data[0] = (x_offset >> 8);
+    data[1] = (x_offset & 0xFF);
+    data[2] = (y_offset >> 8);
+    data[3] = (y_offset & 0xFF);
+    data[4] = (z_offset >> 8);
+    data[5] = (z_offset & 0xFF);
+
+    for (int i = 0; i < 6; i++) {
+        bnowriteRegister(0x61 + i, data[i]);
+    }
+}
+
+void bno_get_acc_radius(uint16_t *acc_radius) {
+    bno_setpage(0);
+    if(acc_radius) *acc_radius = bnoreadMultiple(0x67,2);
+}
+
+void bno_set_acc_radius(uint16_t acc_radius) {
+    bno_setpage(0);
+    uint8_t data[2];
+    data[0] = (acc_radius >> 8);
+    data[1] = (acc_radius & 0xFF);
+
+    for (int i = 0; i < 2; i++) {
+        bnowriteRegister(0x67 + i, data[i]);
+    }
+}
+
+void bno_get_mag_radius(uint16_t *mag_radius) {
+    bno_setpage(0);
+    if (mag_radius) *mag_radius = bnoreadMultiple(0x69, 2);
+}
+
+void bno_set_mag_radius(uint16_t mag_radius) {
+    bno_setpage(0);
+    uint8_t data[2];
+    data[0] = (mag_radius >> 8);
+    data[1] = (mag_radius & 0xFF);
+
+    for (int i = 0; i < 2; i++) {
+        bnowriteRegister(0x69 + i, data[i]);
+    }
+}
+
+// driver done!!! :D
 
 uint8_t bno_getpage(void) {
     return bnoreadRegister(0x07); // Read the page ID from register 0x7

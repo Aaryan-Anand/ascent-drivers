@@ -293,7 +293,17 @@ typedef enum {
     GYRO_C_ADVANCEPOWERSAVE = 0x04
 } bno055_gyro_powermode_t;
 
-
+typedef struct {
+    int16_t Matrix1;
+    int16_t Matrix2;
+    int16_t Matrix3;
+    int16_t Matrix4;
+    int16_t Matrix5;
+    int16_t Matrix6;
+    int16_t Matrix7;
+    int16_t Matrix8;
+    int16_t Matrix9;
+} bno055_sic_matrix_t;
 
 /**
  * @brief Initialize the BNO055 sensor
@@ -492,5 +502,100 @@ void bno_set_gyr_am_thresh(uint8_t gyr_am_thres);
 void bno_get_gyr_am_set(uint8_t *awake_duration, uint8_t *slope_samples);
 void bno_set_gyr_am_set(uint8_t awake_duration, uint8_t slope_samples);
 
+/**
+ * @brief Get the SIC matrix from the BNO055
+ * 
+ * @param matrix Pointer to the structure to store the SIC matrix
+ */
+void bno_get_sic_matrix(bno055_sic_matrix_t *matrix);
+
+/**
+ * @brief Set the SIC matrix in the BNO055
+ * 
+ * @param matrix The SIC matrix to set
+ */
+void bno_set_sic_matrix(bno055_sic_matrix_t matrix);
+
+/**
+ * @brief Get the accelerometer offsets from the BNO055
+ * 
+ * @param x_offset Pointer to store the X offset
+ * @param y_offset Pointer to store the Y offset
+ * @param z_offset Pointer to store the Z offset
+ */
+void bno_get_acc_offsets(uint16_t *x_offset, uint16_t *y_offset, uint16_t *z_offset);
+
+/**
+ * @brief Set the accelerometer offsets in the BNO055
+ * 
+ * @param x_offset The X offset to set
+ * @param y_offset The Y offset to set
+ * @param z_offset The Z offset to set
+ */
+void bno_set_acc_offsets(uint16_t x_offset, uint16_t y_offset, uint16_t z_offset);
+
+/**
+ * @brief Get the magnetometer offsets from the BNO055
+ * 
+ * @param x_offset Pointer to store the X offset
+ * @param y_offset Pointer to store the Y offset
+ * @param z_offset Pointer to store the Z offset
+ */
+void bno_get_mag_offsets(uint16_t *x_offset, uint16_t *y_offset, uint16_t *z_offset);
+
+/**
+ * @brief Set the magnetometer offsets in the BNO055
+ * 
+ * @param x_offset The X offset to set
+ * @param y_offset The Y offset to set
+ * @param z_offset The Z offset to set
+ */
+void bno_set_mag_offsets(uint16_t x_offset, uint16_t y_offset, uint16_t z_offset);
+
+/**
+ * @brief Get the gyroscope offsets from the BNO055
+ * 
+ * @param x_offset Pointer to store the X offset
+ * @param y_offset Pointer to store the Y offset
+ * @param z_offset Pointer to store the Z offset
+ */
+void bno_get_gyro_offsets(uint16_t *x_offset, uint16_t *y_offset, uint16_t *z_offset);
+
+/**
+ * @brief Set the gyroscope offsets in the BNO055
+ * 
+ * @param x_offset The X offset to set
+ * @param y_offset The Y offset to set
+ * @param z_offset The Z offset to set
+ */
+void bno_set_gyro_offsets(uint16_t x_offset, uint16_t y_offset, uint16_t z_offset);
+
+/**
+ * @brief Get the accelerometer radius from the BNO055
+ * 
+ * @param acc_radius Pointer to store the accelerometer radius
+ */
+void bno_get_acc_radius(uint16_t *acc_radius);
+
+/**
+ * @brief Set the accelerometer radius in the BNO055
+ * 
+ * @param acc_radius The accelerometer radius to set
+ */
+void bno_set_acc_radius(uint16_t acc_radius);
+
+/**
+ * @brief Get the magnetometer radius from the BNO055
+ * 
+ * @param mag_radius Pointer to store the magnetometer radius
+ */
+void bno_get_mag_radius(uint16_t *mag_radius);
+
+/**
+ * @brief Set the magnetometer radius in the BNO055
+ * 
+ * @param mag_radius The magnetometer radius to set
+ */
+void bno_set_mag_radius(uint16_t mag_radius);
 
 #endif /* DRIVER_BNO055_H */
