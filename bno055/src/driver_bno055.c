@@ -327,6 +327,8 @@ void bno_trigger_rst(void) {
     bno_setpage(0);
 
     bnowriteRegister(BNO_SYS_TRIGGER_ADDR,0x20);
+
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
 }
 
 void bno_trigger_int_rst(void) {
@@ -448,6 +450,7 @@ void bno_configure_gyro(bno055_gyro_range_t range, bno055_gyro_bandwidth_t bandw
 }
 
 void bno_getacc_config(bno055_acc_pwrmode_t *pwr, bno055_acc_bandwidth_t *bandwidth, bno055_acc_range_t *range) {
+    bno_setpage(1);
     uint8_t currentconfig = bnoreadRegister(ACC_CONFIG_ADDR);
 
     if (pwr) *pwr = (bno055_acc_pwrmode_t)(currentconfig >> 5);
@@ -456,6 +459,7 @@ void bno_getacc_config(bno055_acc_pwrmode_t *pwr, bno055_acc_bandwidth_t *bandwi
 }
 
 void bno_getmag_config(bno055_mag_pwrmode_t *pwr, bno055_mag_oprmode_t *oprmode, bno055_mag_datarate_t *datarate) {
+    bno_setpage(1);
     uint8_t currentconfig = bnoreadRegister(MAG_CONFIG_ADDR);
 
     if (pwr) *pwr = (bno055_mag_pwrmode_t)(currentconfig >> 5);
@@ -464,6 +468,7 @@ void bno_getmag_config(bno055_mag_pwrmode_t *pwr, bno055_mag_oprmode_t *oprmode,
 }
 
 void bno_getgyro_config(bno055_gyro_range_t *range, bno055_gyro_bandwidth_t *bandwidth, bno055_gyro_powermode_t *pwr) {
+    bno_setpage(1);
     uint8_t config_0 = bnoreadRegister(GYRO_CONFIG_ADDR);
     uint8_t config_1 = bnoreadRegister(GYRO_MODE_CONFIG_ADDR);
 
@@ -471,6 +476,243 @@ void bno_getgyro_config(bno055_gyro_range_t *range, bno055_gyro_bandwidth_t *ban
     if (bandwidth) *bandwidth = (bno055_gyro_bandwidth_t)(config_0 >> 4);
     if (pwr) *pwr = (bno055_gyro_powermode_t)(config_1);
 }
+
+void bno_get_acc_amthres(uint8_t *am_thres) {
+    bno_setpage(1);
+    if (am_thres) *am_thres = bnoreadRegister(0x11);
+}
+
+void bno_set_acc_amthres(uint8_t am_thres) {
+    bno_setpage(1);
+    bnowriteRegister(0x11,am_thres);
+}
+
+void bno_get_acc_int(bool *hg_z, bool *hg_y, bool *hg_x, bool *am_nm_z, bool *am_nm_y, bool *am_nm_x, uint8_t *am_dur) {
+    bno_setpage(1);
+    uint8_t acc_int = bnoreadRegister(0x12);
+
+    if (hg_z) *hg_z = (acc_int & 0x80) != 0;  // High-G interrupt Z-axis
+    if (hg_y) *hg_y = (acc_int & 0x40) != 0;  // High-G interrupt Y-axis
+    if (hg_x) *hg_x = (acc_int & 0x20) != 0;  // High-G interrupt X-axis
+    if (am_nm_z) *am_nm_z = (acc_int & 0x10) != 0;  // AM/NM Z-axis
+    if (am_nm_y) *am_nm_y = (acc_int & 0x08) != 0;  // AM/NM Y-axis
+    if (am_nm_x) *am_nm_x = (acc_int & 0x04) != 0;  // AM/NM X-axis
+    if (am_dur) *am_dur = (acc_int & 0x03);
+}
+
+void bno_set_acc_int(bool hg_z, bool hg_y, bool hg_x, bool am_nm_z, bool am_nm_y, bool am_nm_x, uint8_t am_dur) {
+    bno_setpage(1);
+    uint8_t acc_int = 0;
+
+    if (hg_z) acc_int |= 0x80;  // High-G interrupt Z-axis
+    if (hg_y) acc_int |= 0x40;  // High-G interrupt Y-axis
+    if (hg_x) acc_int |= 0x20;  // High-G interrupt X-axis
+    if (am_nm_z) acc_int |= 0x10;  // AM/NM Z-axis
+    if (am_nm_y) acc_int |= 0x08;  // AM/NM Y-axis
+    if (am_nm_x) acc_int |= 0x04;  // AM/NM X-axis
+    acc_int |= (am_dur & 0x03);
+
+    bnowriteRegister(0x12, acc_int);
+}
+
+void bno_get_acc_hgduration(uint8_t *acc_hg_duration) {
+    bno_setpage(1);
+    if (acc_hg_duration) *acc_hg_duration = bnoreadRegister(0x13);
+}
+
+void bno_set_acc_hgduration(uint8_t acc_hg_duration) {
+    bno_setpage(1);
+    bnowriteRegister(0x13,acc_hg_duration);
+}
+
+void bno_get_acc_hgtresh(uint8_t *acc_hg_tresh) {
+    bno_setpage(1);
+    if(acc_hg_tresh) *acc_hg_tresh = bnoreadRegister(0x14);
+}
+
+void bno_set_acc_hgtresh(uint8_t acc_hg_tresh) {
+    bno_setpage(1);
+    bnowriteRegister(0x14,acc_hg_tresh);
+}
+
+void bno_get_acc_nmtresh(uint8_t *acc_nm_tresh) {
+    bno_setpage(1);
+    if(acc_nm_tresh) *acc_nm_tresh = bnoreadRegister(0x14);
+}
+
+void bno_set_acc_nmtresh(uint8_t acc_nm_tresh) {
+    bno_setpage(1);
+    bnowriteRegister(0x14,acc_nm_tresh);
+}
+
+void bno_get_acc_nm_set(bool *slowmotion_nomotion, uint8_t *slow_no_mot_dur) {
+    bno_setpage(1);
+    uint8_t acc_nm_set = bnoreadRegister(0x16);
+
+    if (slowmotion_nomotion) *slowmotion_nomotion = (acc_nm_set & 0x01) != 0;
+    if (slow_no_mot_dur) *slowmotion_nomotion = (acc_nm_set >> 1);
+}
+
+void bno_set_acc_nm_set(bool slowmotion_nomotion, uint8_t slow_no_mot_dur) {
+    bno_setpage(1);
+    uint8_t acc_nm_set = 0;
+
+    if (slowmotion_nomotion) acc_nm_set |= 0x01;
+    acc_nm_set |= (slow_no_mot_dur << 1);
+
+    bnowriteRegister(0x16, acc_nm_set);
+}
+
+void bno_get_gyro_int_setting(bool *hr_filt, bool *am_filt, bool *hr_z_axis, bool *hr_y_axis, bool *hr_x_axis, bool *am_z_axis, bool *am_y_axis, bool *am_x_axis) {
+    bno_setpage(1);
+
+    uint8_t gyr_int_settings = bnoreadRegister(0x17);
+
+    if (hr_filt) *hr_filt = (gyr_int_settings & 0x80) != 0; 
+    if (am_filt) *am_filt = (gyr_int_settings & 0x40) != 0; 
+    if (hr_z_axis) *hr_z_axis = (gyr_int_settings & 0x20) != 0; 
+    if (hr_y_axis) *hr_y_axis = (gyr_int_settings & 0x10) != 0; 
+    if (hr_x_axis) *hr_x_axis = (gyr_int_settings & 0x08) != 0; 
+    if (am_z_axis) *am_z_axis = (gyr_int_settings & 0x04) != 0; 
+    if (am_y_axis) *am_y_axis = (gyr_int_settings & 0x02) != 0; 
+    if (am_x_axis) *am_x_axis = (gyr_int_settings & 0x01) != 0; 
+}
+
+void bno_set_gyro_int_setting(bool hr_filt, bool am_filt, bool hr_z_axis, bool hr_y_axis, bool hr_x_axis, bool am_z_axis, bool am_y_axis, bool am_x_axis) {
+    bno_setpage(1);
+
+    uint8_t gyr_int_settings = 0;
+
+    if (hr_filt) gyr_int_settings |= 0x80;
+    if (am_filt) gyr_int_settings |= 0x40;
+    if (hr_z_axis) gyr_int_settings |= 0x20;
+    if (hr_y_axis) gyr_int_settings |= 0x10;
+    if (hr_x_axis) gyr_int_settings |= 0x08;
+    if (am_z_axis) gyr_int_settings |= 0x04;
+    if (am_y_axis) gyr_int_settings |= 0x02;
+    if (am_x_axis) gyr_int_settings |= 0x01;
+
+    bnowriteRegister(0x17, gyr_int_settings);
+}
+
+void bno_get_gyr_hr_x_set(uint8_t *hr_x_thres_hyst, uint8_t *hr_x_threshold) {
+    bno_setpage(1);
+
+    uint8_t gyr_hr_x_set = bnoreadRegister(0x18);
+
+    if (hr_x_thres_hyst) *hr_x_thres_hyst = (gyr_hr_x_set >> 5);
+    if (hr_x_threshold) *hr_x_threshold = (gyr_hr_x_set & 0x1F);
+}
+
+void bno_set_gyr_hr_x_set(uint8_t hr_x_thres_hyst, uint8_t hr_x_threshold) {
+    bno_setpage(1);
+
+    uint8_t gyr_hr_x_set = 0;
+
+    gyr_hr_x_set |= (hr_x_thres_hyst << 5);
+    gyr_hr_x_set |= (hr_x_threshold & 0x1F);
+
+    bnowriteRegister(0x18, gyr_hr_x_set);
+}
+
+void bno_get_gyr_dur_x(uint8_t *hr_x_duration){ 
+    bno_setpage(0);
+    if (hr_x_duration) *hr_x_duration = bnoreadRegister(0x19);
+}
+
+void bno_set_gyr_dur_x(uint8_t hr_x_duration) {
+    bno_setpage(1);
+    bnowriteRegister(0x19, hr_x_duration);
+}
+
+void bno_get_gyr_hr_y_set(uint8_t *hr_y_thres_hyst, uint8_t *hr_y_threshold) {
+    bno_setpage(1);
+
+    uint8_t gyr_hr_y_set = bnoreadRegister(0x1A);
+
+    if (hr_y_thres_hyst) *hr_y_thres_hyst = (gyr_hr_y_set >> 5);
+    if (hr_y_threshold) *hr_y_threshold = (gyr_hr_y_set & 0x1F);
+}
+
+void bno_set_gyr_hr_y_set(uint8_t hr_y_thres_hyst, uint8_t hr_y_threshold) {
+    bno_setpage(1);
+
+    uint8_t gyr_hr_y_set = 0;
+
+    gyr_hr_y_set |= (hr_y_thres_hyst << 5);
+    gyr_hr_y_set |= (hr_y_threshold & 0x1F);
+
+    bnowriteRegister(0x1A, gyr_hr_y_set);
+}
+
+void bno_get_gyr_dur_y(uint8_t *hr_y_duration){ 
+    bno_setpage(0);
+    if (hr_y_duration) *hr_y_duration = bnoreadRegister(0x1B);
+}
+
+void bno_set_gyr_dur_y(uint8_t hr_y_duration) {
+    bno_setpage(1);
+    bnowriteRegister(0x1B, hr_y_duration);
+}
+
+void bno_get_gyr_hr_z_set(uint8_t *hr_z_thres_hyst, uint8_t *hr_z_threshold) {
+    bno_setpage(1);
+
+    uint8_t gyr_hr_z_set = bnoreadRegister(0x1C);
+
+    if (hr_z_thres_hyst) *hr_z_thres_hyst = (gyr_hr_z_set >> 5);
+    if (hr_z_threshold) *hr_z_threshold = (gyr_hr_z_set & 0x1F);
+}
+
+void bno_set_gyr_hr_z_set(uint8_t hr_z_thres_hyst, uint8_t hr_z_threshold) {
+    bno_setpage(1);
+
+    uint8_t gyr_hr_z_set = 0;
+
+    gyr_hr_z_set |= (hr_z_thres_hyst << 5);
+    gyr_hr_z_set |= (hr_z_threshold & 0x1F);
+
+    bnowriteRegister(0x1C, gyr_hr_z_set);
+}
+
+void bno_get_gyr_dur_z(uint8_t *hr_z_duration){ 
+    bno_setpage(0);
+    if (hr_z_duration) *hr_z_duration = bnoreadRegister(0x1D);
+}
+
+void bno_set_gyr_dur_z(uint8_t hr_z_duration) {
+    bno_setpage(1);
+    bnowriteRegister(0x1D, hr_z_duration);
+}
+
+void bno_get_gyr_am_thresh(uint8_t *gyr_am_thres) {
+    bno_setpage(1);
+    if (gyr_am_thres) *gyr_am_thres = (bnoreadRegister(0x1E) & 0x7F);
+}
+
+void bno_set_gyr_am_thresh(uint8_t gyr_am_thres) {
+    bno_setpage(1);
+    bnowriteRegister(0x1E, gyr_am_thres & 0x7F);
+}
+
+void bno_get_gyr_am_set(uint8_t *awake_duration, uint8_t *slope_samples) {
+    bno_setpage(1);
+    uint8_t gyr_am_set = bnoreadRegister(0x1F);
+    if (awake_duration) *awake_duration = (gyr_am_set >> 2);
+    if (slope_samples) *slope_samples = (gyr_am_set & 0x03);
+}
+
+void bno_set_gyr_am_set(uint8_t awake_duration, uint8_t slope_samples) {
+    bno_setpage(1);
+
+    uint8_t gyr_am_set = 0;
+
+    gyr_am_set |= (awake_duration << 2);
+    gyr_am_set |= (slope_samples & 0x03);
+
+    bnowriteRegister(0x1F, gyr_am_set);
+}
+
 
 uint8_t bno_getpage(void) {
     return bnoreadRegister(0x07); // Read the page ID from register 0x7
@@ -482,7 +724,7 @@ void bno_setpage(int8_t page) {
     if (current_page == page) {
         return; // Exit if the current page is already the desired page
     }
-    
+
     bnowriteRegister(0x07, page);
     current_page = page; // Update the static variable with the new page
 }

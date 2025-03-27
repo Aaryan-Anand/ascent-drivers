@@ -17,6 +17,10 @@ void BNOTest() {
         return;
     }
 
+    printf("Resetting system...\n");
+
+    bno_trigger_rst();
+
     // Set operation mode to NDOF
     bno_setoprmode(NDOF);
     printf("Operation mode set to NDOF.\n");
@@ -205,6 +209,10 @@ void BNOTest() {
 
     printf("\n");
 
+    printf("Resetting system...\n");
+
+    bno_trigger_rst();
+
     bno_setoprmode(CONFIG);
 
     //attempt to set to defaults
@@ -214,7 +222,7 @@ void BNOTest() {
     bno_config_mag(MAG_C_NORMAL, MAG_C_REGULAR, MAG_C_H10);
     bno_configure_gyro(GYRO_C_D2000, GYRO_C_H32, GYRO_C_NORMAL);
 
-    printf("\nReading config from registers:");
+    printf("\nReading config from registers:\n");
     bno055_acc_pwrmode_t acc_pwr;
     bno055_acc_bandwidth_t acc_bandwidth;
     bno055_acc_range_t acc_range;
@@ -240,7 +248,7 @@ void BNOTest() {
     bno_config_mag(MAG_C_NORMAL, MAG_C_HIGHACCURACY, MAG_C_H30);
     bno_configure_gyro(GYRO_C_D2000, GYRO_C_H523, GYRO_C_NORMAL);
 
-    printf("\nReading config from registers:");
+    printf("\nReading config from registers:\n");
     bno_getacc_config(&acc_pwr, &acc_bandwidth, &acc_range);
     printf("Accelerometer Configuration - Power Mode: %d, Bandwidth: %d, Range: %d\n", acc_pwr, acc_bandwidth, acc_range);
 
@@ -257,7 +265,7 @@ void BNOTest() {
     bno_config_mag(MAG_C_NORMAL, MAG_C_REGULAR, MAG_C_H10);
     bno_configure_gyro(GYRO_C_D2000, GYRO_C_H32, GYRO_C_NORMAL);
 
-    printf("\nReading config from registers:");
+    printf("\nReading config from registers:\n");
     bno_getacc_config(&acc_pwr, &acc_bandwidth, &acc_range);
     printf("Accelerometer Configuration - Power Mode: %d, Bandwidth: %d, Range: %d\n", acc_pwr, acc_bandwidth, acc_range);
 
@@ -266,6 +274,10 @@ void BNOTest() {
 
     bno_getgyro_config(&gyro_range, &gyro_bandwidth, &gyro_pwr);
     printf("Gyroscope Configuration - Range: %d, Bandwidth: %d, Power Mode: %d\n", gyro_range, gyro_bandwidth, gyro_pwr);
+
+    printf("\nResetting system...\n");
+
+    bno_trigger_rst();
 
     printf("\n\nBNO055 Full Test Completed.\n");
 }

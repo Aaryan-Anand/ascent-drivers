@@ -460,5 +460,37 @@ void bno_getacc_config(bno055_acc_pwrmode_t *pwr, bno055_acc_bandwidth_t *bandwi
 void bno_getmag_config(bno055_mag_pwrmode_t *pwr, bno055_mag_oprmode_t *oprmode, bno055_mag_datarate_t *datarate);
 void bno_getgyro_config(bno055_gyro_range_t *range, bno055_gyro_bandwidth_t *bandwidth, bno055_gyro_powermode_t *pwr);
 
+void bno_get_acc_amthres(uint8_t *am_thres);
+void bno_set_acc_amthres(uint8_t am_thres);
+void bno_get_acc_int(bool *hg_z, bool *hg_y, bool *hg_x, bool *am_nm_z, bool *am_nm_y, bool *am_nm_x, uint8_t *am_dur);
+void bno_set_acc_int(bool hg_z, bool hg_y, bool hg_x, bool am_nm_z, bool am_nm_y, bool am_nm_x, uint8_t am_dur);
+void bno_get_acc_hgduration(uint8_t *acc_hg_duration);
+void bno_set_acc_hgduration(uint8_t acc_hg_duration);
+void bno_get_acc_hgtresh(uint8_t *acc_hg_tresh);
+void bno_set_acc_hgtresh(uint8_t acc_hg_tresh);
+void bno_get_acc_nmtresh(uint8_t *acc_nm_tresh);
+void bno_set_acc_nmtresh(uint8_t acc_nm_tresh);
+void bno_get_acc_nm_set(bool *slowmotion_nomotion, uint8_t *slow_no_mot_dur);
+void bno_set_acc_nm_set(bool slowmotion_nomotion, uint8_t slow_no_mot_dur);
+
+void bno_get_gyro_int_setting(bool *hr_filt, bool *am_filt, bool *hr_z_axis, bool *hr_y_axis, bool *hr_x_axis, bool *am_z_axis, bool *am_y_axis, bool *am_x_axis);
+void bno_set_gyro_int_setting(bool hr_filt, bool am_filt, bool hr_z_axis, bool hr_y_axis, bool hr_x_axis, bool am_z_axis, bool am_y_axis, bool am_x_axis);
+void bno_get_gyr_hr_x_set(uint8_t *hr_x_thres_hyst, uint8_t *hr_x_threshold);
+void bno_set_gyr_hr_x_set(uint8_t hr_x_thres_hyst, uint8_t hr_x_threshold);
+void bno_get_gyr_dur_x(uint8_t *hr_x_duration);
+void bno_set_gyr_dur_x(uint8_t hr_x_duration);
+void bno_get_gyr_hr_y_set(uint8_t *hr_y_thres_hyst, uint8_t *hr_y_threshold);
+void bno_set_gyr_hr_y_set(uint8_t hr_y_thres_hyst, uint8_t hr_y_threshold);
+void bno_get_gyr_dur_y(uint8_t *hr_y_duration);
+void bno_set_gyr_dur_y(uint8_t hr_y_duration);
+void bno_get_gyr_hr_z_set(uint8_t *hr_z_thres_hyst, uint8_t *hr_z_threshold);
+void bno_set_gyr_hr_z_set(uint8_t hr_z_thres_hyst, uint8_t hr_z_threshold);
+void bno_get_gyr_dur_z(uint8_t *hr_z_duration);
+void bno_set_gyr_dur_z(uint8_t hr_z_duration);
+void bno_get_gyr_am_thresh(uint8_t *gyr_am_thres);
+void bno_set_gyr_am_thresh(uint8_t gyr_am_thres);
+void bno_get_gyr_am_set(uint8_t *awake_duration, uint8_t *slope_samples);
+void bno_set_gyr_am_set(uint8_t awake_duration, uint8_t slope_samples);
+
 
 #endif /* DRIVER_BNO055_H */
