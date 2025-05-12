@@ -544,7 +544,7 @@ lora_init(void)
    //    .max_transfer_sz = 0
    // };
            
-   //ret = spi_bus_initialize(VSPI_HOST, &bus, 0);
+   // //ret = spi_bus_initialize(VSPI_HOST, &bus, 0);
    // ret = spi_bus_initialize(HOST_ID, &bus, SPI_DMA_CH_AUTO);
    // assert(ret == ESP_OK);
 
