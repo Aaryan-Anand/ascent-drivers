@@ -665,9 +665,9 @@ esp_err_t h3lis331dl_read_accel(double *x_accel, double *y_accel, double *z_acce
     }
 
     // Convert raw values to g's
-    *x_accel = convert_raw_to_g(raw_values[0], false);
-    *y_accel = convert_raw_to_g(raw_values[1], false);
-    *z_accel = convert_raw_to_g(raw_values[2], false);
+    *x_accel = convert_raw_to_g(raw_values[0], false)*9.81;
+    *y_accel = convert_raw_to_g(raw_values[1], false)*9.81;
+    *z_accel = convert_raw_to_g(raw_values[2], false)*9.81;
 
     return ESP_OK;
 }
