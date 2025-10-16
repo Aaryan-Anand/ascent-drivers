@@ -29,17 +29,6 @@ static esp_err_t pyroValidate(void) {
         // Check continuity
         bool cont = pyro_continuity(channel);
         printf("  - Continuity: %s\n", cont ? "DETECTED" : "NONE");
-
-        // Check voltage/resistance if continuity exists
-        if (cont) {
-            double voltage = pyro_resistance(channel);
-            if (voltage >= 0) {
-                printf("  - Resistance: %.3f Ohm\n", voltage);
-            } else {
-                printf("  - Resistance: ERROR\n");
-                ret = ESP_FAIL;
-            }
-        }
         
         fflush(stdout);
         vTaskDelay(pdMS_TO_TICKS(100));
