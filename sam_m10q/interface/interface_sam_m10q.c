@@ -16,6 +16,8 @@
 #include "i2c_manager.h"
 #include "driver_SAM_M10Q.h"
 
+#include "interface_sam_m10q.h"
+
 #define GPS_RETRY_DELAY 0
 
 void GPS_init(void) {
@@ -111,7 +113,7 @@ void GPS_init(void) {
 }
 
 
-void GPS_read(uint32_t *UTCtstamp, int32_t *lon, int32_t *lat, int32_t *height, int32_t *hMSL, uint8_t *fixType, uint8_t *numSV) {
+void GPS_read(GPS_data_t *gps_data) {
     esp_err_t ret;
     sam_m10q_msginfo_t msginfo;
     uint8_t gps_packet_buf[GPS_MAX_PACKET_SIZE];
@@ -121,13 +123,13 @@ void GPS_read(uint32_t *UTCtstamp, int32_t *lon, int32_t *lat, int32_t *height, 
 
     ret = reqNAVPVT(); // request NAV-PVT from the GPS
     if (ret != ESP_OK) {
-        *UTCtstamp = 0;
-        *lon = 0;
-        *lat = 0;
-        *hMSL = 0;
-        *height = 0;
-        *fixType = 0;
-        *numSV = 0;
+        gps_data->UTCtstamp = 0;
+        gps_data->lon = 0;
+        gps_data->lat = 0;
+        gps_data->hMSL = 0;
+        gps_data->height = 0;
+        gps_data->fixType = 0;
+        gps_data->numSV = 0;
         printf("!!!!! WRITING TO GPS FAILED !!!!!!\n"); // todo: send the board into a fail state
     };
 
@@ -148,11 +150,11 @@ void GPS_read(uint32_t *UTCtstamp, int32_t *lon, int32_t *lat, int32_t *height, 
 
     // yeet the information at pointers
     // this is what the flight state logic and telemetry will use
-    *UTCtstamp = navpvt.iTOW;
-    *lon = navpvt.lon;
-    *lat = navpvt.lat;
-    *hMSL = navpvt.hMSL;
-    *height = navpvt.height;
-    *fixType = navpvt.fixType;
-    *numSV = navpvt.numSV;
+    gps_data->UTCtstamp = navpvt.iTOW;
+    gps_data->lon = navpvt.lon;
+    gps_data->lat = navpvt.lat;
+    gps_data->hMSL = navpvt.hMSL;
+    gps_data->height = navpvt.height;
+    gps_data->fixType = navpvt.fixType;
+    gps_data->numSV = navpvt.numSV;
 }
