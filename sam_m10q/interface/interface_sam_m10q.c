@@ -16,7 +16,7 @@
 #include "i2c_manager.h"
 #include "driver_SAM_M10Q.h"
 
-#define GPS_RETRY_DELAY 50
+#define GPS_RETRY_DELAY 0
 
 void GPS_init(void) {
     esp_err_t ret;
@@ -135,11 +135,12 @@ void GPS_read(uint32_t *UTCtstamp, int32_t *lon, int32_t *lat, int32_t *height, 
         ret = readNextGPSPacket(&msginfo, gps_packet_buf, &gps_packet_length); // read the response (i.e. next packet from the GPS)
         if (ret != ESP_OK) {
             vTaskDelay(GPS_RETRY_DELAY/portTICK_PERIOD_MS);  // arbritary retry delay
+            printf("GPS RETRY # %d\n", attempts + 1);
             attempts++;
         }
     } while (
         ret != ESP_OK &&
-        attempts < 15 &&    // arbritary number
+        attempts < 2 &&    // arbritary number
         msginfo.id != 0x07  // nav-pvt message ID
     );
     
