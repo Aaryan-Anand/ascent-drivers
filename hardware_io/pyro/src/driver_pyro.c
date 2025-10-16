@@ -15,6 +15,8 @@ static const gpio_num_t pyro_out_pins[] = {
     PYRO1_OUT, PYRO2_OUT, PYRO3_OUT, PYRO4_OUT
 };
 
+pyro_state_t pyro_state[5];
+
 esp_err_t pyro_init(void) {
     // Configure output pins
     for (int i = 0; i < 4; i++) {
@@ -98,72 +100,6 @@ bool pyro_continuity(pyro_channel_t channel) {
     return (voltage > 1.0);
 }
 
-double pyro_resistance(pyro_channel_t channel) {
-    if (channel < 1 || channel > 4) {
-        return -1.0;
-    }
-
-    // Check power source
-    power_status_t power_status = psu_get_power_source();
-    if (power_status.source != POWER_SOURCE_BOTH && power_status.source != POWER_SOURCE_BATTERY_ONLY) {
-        ESP_LOGE(TAG, "Resistance can't be measured accurately with current power source.");
-        return -1.0;
-    }
-
-    // Get the corresponding ADC channel from the enum
-    adc_channel_t adc_chan;
-    switch (channel) {
-        case PYRO_CHANNEL_1:
-            adc_chan = ADC_CHANNEL_0;
-            break;
-        case PYRO_CHANNEL_2:
-            adc_chan = ADC_CHANNEL_1;
-            break;
-        case PYRO_CHANNEL_3:
-            adc_chan = ADC_CHANNEL_2;
-            break;
-        case PYRO_CHANNEL_4:
-            adc_chan = ADC_CHANNEL_3;
-            break;
-        default:
-            return -1.0;
-    }
-
-    // Configure ADC channel for this reading
-    adc_oneshot_chan_cfg_t channel_config = {
-        .atten = ADC_ATTEN_DB_12,
-        .bitwidth = ADC_BITWIDTH_DEFAULT,
-    };
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, adc_chan, &channel_config));
-
-    // Read ADC
-    int adc_raw;
-    int voltage_mv;
-    esp_err_t ret = adc_oneshot_read(adc1_handle, adc_chan, &adc_raw);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "ADC read error on channel %d", channel);
-        return -1.0;
-    }
-
-    // Convert raw reading to millivolts using calibration
-    ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc_cali_handle[adc_chan], adc_raw, &voltage_mv));
-    double measured_voltage = voltage_mv / 1000.0;
-    
-    // Scale voltage based on voltage divider (multiply by 3.778)
-    double actual_voltage = measured_voltage * DIVIDER_RATIO;
-
-    // Calculate resistance
-    double source_voltage = psu_read_battery_voltage();
-    double effective_voltage = source_voltage - DIODE_DROP;
-    double rematch = PYRO_RESISTANCE_COEFFICIENT * ((effective_voltage / actual_voltage) - DIVIDER_RATIO);
-
-    if (rematch < 0) rematch = 0;
-
-    ESP_LOGI(TAG, "Channel %d - Resistance: %.3f Ohms", channel, rematch);
-
-    return rematch;
-}
-
 esp_err_t pyro_activate(pyro_channel_t channel, uint8_t delay, bool bypass) {
     if (channel < 1 || channel > 4) {
         return ESP_ERR_INVALID_ARG;
@@ -178,14 +114,35 @@ esp_err_t pyro_activate(pyro_channel_t channel, uint8_t delay, bool bypass) {
     // Activate the pyro channel
     gpio_set_level(pyro_out_pins[channel - 1], 1);
     
-    // You might want to add a delay here depending on your requirements
-    vTaskDelay(pdMS_TO_TICKS(delay)); // Example: 100ms pulse
+    pyro_state[channel].start_us = esp_timer_get_time();
+    pyro_state[channel].duration_ms = delay;
+    pyro_state[channel].state = true;
 
-    if (delay != 0) {
-        // Reset the output
-        gpio_set_level(pyro_out_pins[channel - 1], 0);
+    return ESP_OK;
+}
+
+esp_err_t pyro_deactivate(pyro_channel_t channel) {
+    if (channel < 1 || channel > 4) {
+        return ESP_ERR_INVALID_ARG;
     }
+    gpio_set_level(pyro_out_pins[channel - 1], 0);
+    return ESP_OK;
+}
 
+esp_err_t pyro_update_state(void) {
+    for (pyro_channel_t channel = PYRO_CHANNEL_1; channel <= PYRO_CHANNEL_4; channel++) {
+        if (pyro_state[channel].state && pyro_state[channel].duration_ms != 0) {
+            if (esp_timer_get_time() - pyro_state[channel].start_us > pyro_state[channel].duration_ms * 1000) {
+                pyro_deactivate(channel);
+                pyro_state[channel].state = false;
+            }
+        }
+    }
+    return ESP_OK;
+}
+
+esp_err_t pyro_poll_state(pyro_state_t *state[5]) {
+    *state = pyro_state;
     return ESP_OK;
 }
 
