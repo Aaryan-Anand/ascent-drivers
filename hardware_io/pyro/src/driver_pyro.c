@@ -5,6 +5,7 @@
 #include "adc_cali.h"
 #include "adc_cali_scheme.h"
 #include "driver_psu.h"
+#include "esp_timer.h"
 
 static const char *TAG = "PYRO";
 static adc_oneshot_unit_handle_t adc1_handle;
