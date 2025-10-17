@@ -16,7 +16,7 @@ static const gpio_num_t pyro_out_pins[] = {
     PYRO1_OUT, PYRO2_OUT, PYRO3_OUT, PYRO4_OUT
 };
 
-pyro_state_t pyro_state[5];
+static pyro_state_t pyro_state[5] = {0};
 
 esp_err_t pyro_init(void) {
     // Configure output pins
@@ -127,6 +127,7 @@ esp_err_t pyro_deactivate(pyro_channel_t channel) {
         return ESP_ERR_INVALID_ARG;
     }
     gpio_set_level(pyro_out_pins[channel - 1], 0);
+    pyro_state[channel].state = false;
     return ESP_OK;
 }
 
@@ -135,7 +136,6 @@ esp_err_t pyro_update_state(void) {
         if (pyro_state[channel].state && pyro_state[channel].duration_ms != 0) {
             if (esp_timer_get_time() - pyro_state[channel].start_us > pyro_state[channel].duration_ms * 1000) {
                 pyro_deactivate(channel);
-                pyro_state[channel].state = false;
             }
         }
     }
