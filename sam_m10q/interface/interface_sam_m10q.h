@@ -3,7 +3,17 @@
 
 #include "driver_SAM_M10Q.h"
 
-void GPS_ReqNavPVT(uint32_t *UTCtstamp, int32_t *lon, int32_t *lat, int32_t *height, int32_t *hMSL, uint8_t *fixType, uint8_t *numSV);
+typedef struct {
+    uint32_t UTCtstamp;
+    int32_t lon;
+    int32_t lat;
+    int32_t height;
+    int32_t hMSL;
+    uint8_t fixType;
+    uint8_t numSV;
+} GPS_data_t;
+
+void GPS_read(GPS_data_t *gps_data);
 
 void GPS_init(void);
 
