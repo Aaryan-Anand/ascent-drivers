@@ -67,27 +67,6 @@ void GPS_init(void) {
         attempts < 15 &&
         msginfo.id != 0x01 // UBX-ACK-ACK
     );
-    
-    setAirborneDynamicModel();
-    attempts = 0;
-    do {
-        ret = readNextGPSPacket(&msginfo, gps_packet_buf, &gps_packet_length);
-        if (ret != ESP_OK) {
-            vTaskDelay(GPS_RETRY_DELAY/portTICK_PERIOD_MS);
-            attempts++;
-        }
-        if (msginfo.id != 0x01) {
-            printf("Failed to set GPS to Airborne Dynamic Model, Retry # %d\n", attempts);
-            for (int i = 0; i < gps_packet_length; i++) {
-                printf("0x%02X ", gps_packet_buf[i]);
-            }
-            printf("\n");
-        }
-    } while (
-        ret != ESP_OK &&
-        attempts < 15 &&
-        msginfo.id != 0x01 // UBX-ACK-ACK
-    );
 
     enableAllConstellations();
     attempts = 0;
